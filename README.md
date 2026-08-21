@@ -1,7 +1,6 @@
 --[[
-    NoobHub - Auto Bond para Dead Rails
-    Ativa Remove Event do Bond sem teleportar
-    Verifica se é Bond e pega naturalmente
+    NoobHub - Sistema de XP Simples
+    Mata NPC e ganha XP
 ]]
 
 local Players = game:GetService("Players")
@@ -19,7 +18,7 @@ ScreenGui.ResetOnSpawn = false
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
 MainFrame.Size = UDim2.new(0, 300, 0, 200)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100) -- CENTRO DA TELA
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -68,377 +67,240 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 5)
 MinCorner.Parent = MinimizeButton
 
--- Status Label
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.25, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Status: 🔴 Desativado"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-StatusLabel.TextSize = 13
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatusLabel.Parent = MainFrame
+-- Nível Label
+local LevelLabel = Instance.new("TextLabel")
+LevelLabel.Size = UDim2.new(0.9, 0, 0, 25)
+LevelLabel.Position = UDim2.new(0.05, 0, 0.25, 0)
+LevelLabel.BackgroundTransparency = 1
+LevelLabel.Text = "⭐ Nível: 1"
+LevelLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+LevelLabel.TextSize = 14
+LevelLabel.Font = Enum.Font.GothamBold
+LevelLabel.TextXAlignment = Enum.TextXAlignment.Left
+LevelLabel.Parent = MainFrame
 
--- Label de Bonds no mapa
-local BondsOnMapLabel = Instance.new("TextLabel")
-BondsOnMapLabel.Size = UDim2.new(0.9, 0, 0, 25)
-BondsOnMapLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
-BondsOnMapLabel.BackgroundTransparency = 1
-BondsOnMapLabel.Text = "💵 Bonds no Mapa: 0"
-BondsOnMapLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
-BondsOnMapLabel.TextSize = 13
-BondsOnMapLabel.Font = Enum.Font.GothamBold
-BondsOnMapLabel.TextXAlignment = Enum.TextXAlignment.Left
-BondsOnMapLabel.Parent = MainFrame
+-- XP Label
+local XPLabel = Instance.new("TextLabel")
+XPLabel.Size = UDim2.new(0.9, 0, 0, 25)
+XPLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
+XPLabel.BackgroundTransparency = 1
+XPLabel.Text = "✨ XP: 0/100"
+XPLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+XPLabel.TextSize = 14
+XPLabel.Font = Enum.Font.Gotham
+XPLabel.TextXAlignment = Enum.TextXAlignment.Left
+XPLabel.Parent = MainFrame
 
--- Label de Bonds coletados
-local BondsCollectedLabel = Instance.new("TextLabel")
-BondsCollectedLabel.Size = UDim2.new(0.9, 0, 0, 25)
-BondsCollectedLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
-BondsCollectedLabel.BackgroundTransparency = 1
-BondsCollectedLabel.Text = "✅ Bonds Coletados: 0"
-BondsCollectedLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-BondsCollectedLabel.TextSize = 13
-BondsCollectedLabel.Font = Enum.Font.GothamBold
-BondsCollectedLabel.TextXAlignment = Enum.TextXAlignment.Left
-BondsCollectedLabel.Parent = MainFrame
+-- Barra de XP (fundo)
+local XPBarBackground = Instance.new("Frame")
+XPBarBackground.Size = UDim2.new(0.9, 0, 0, 15)
+XPBarBackground.Position = UDim2.new(0.05, 0, 0.55, 0)
+XPBarBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+XPBarBackground.BorderSizePixel = 0
+XPBarBackground.Parent = MainFrame
 
--- Botão Auto Bond
-local AutoBondButton = Instance.new("TextButton")
-AutoBondButton.Size = UDim2.new(0.9, 0, 0, 35)
-AutoBondButton.Position = UDim2.new(0.05, 0, 0.72, 0)
-AutoBondButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-AutoBondButton.BorderSizePixel = 0
-AutoBondButton.Text = "🎯 ATIVAR AUTO BOND"
-AutoBondButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-AutoBondButton.TextSize = 12
-AutoBondButton.Font = Enum.Font.GothamBold
-AutoBondButton.Parent = MainFrame
+local XPBarCorner = Instance.new("UICorner")
+XPBarCorner.CornerRadius = UDim.new(0, 5)
+XPBarCorner.Parent = XPBarBackground
 
-local AutoBondCorner = Instance.new("UICorner")
-AutoBondCorner.CornerRadius = UDim.new(0, 5)
-AutoBondCorner.Parent = AutoBondButton
+-- Barra de XP (preenchimento)
+local XPBarFill = Instance.new("Frame")
+XPBarFill.Size = UDim2.new(0, 0, 1, 0)
+XPBarFill.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+XPBarFill.BorderSizePixel = 0
+XPBarFill.Parent = XPBarBackground
+
+local XPBarFillCorner = Instance.new("UICorner")
+XPBarFillCorner.CornerRadius = UDim.new(0, 5)
+XPBarFillCorner.Parent = XPBarFill
+
+-- Botão Auto Farm
+local AutoFarmButton = Instance.new("TextButton")
+AutoFarmButton.Size = UDim2.new(0.9, 0, 0, 35)
+AutoFarmButton.Position = UDim2.new(0.05, 0, 0.72, 0)
+AutoFarmButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+AutoFarmButton.BorderSizePixel = 0
+AutoFarmButton.Text = "⚔️ ATIVAR AUTO FARM"
+AutoFarmButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoFarmButton.TextSize = 12
+AutoFarmButton.Font = Enum.Font.GothamBold
+AutoFarmButton.Parent = MainFrame
+
+local AutoFarmCorner = Instance.new("UICorner")
+AutoFarmCorner.CornerRadius = UDim.new(0, 5)
+AutoFarmCorner.Parent = AutoFarmButton
 
 -- Variáveis
-local isAutoBondActive = false
+local isAutoFarmActive = false
 local isMinimized = false
 local originalSize = MainFrame.Size
-local bondsCollected = 0
-local autoBondConnections = {}
-local processedBonds = {}
+local currentXP = 0
+local currentLevel = 1
+local xpToNextLevel = 100
+local npcsKilled = 0
+local autoFarmConnections = {}
 
--- Função para verificar se é um Bond
-local function isBond(obj)
-    if not obj or not obj.Parent then return false end
+-- Função para atualizar barra de XP
+local function updateXPBar()
+    XPLabel.Text = "✨ XP: " .. currentXP .. "/" .. xpToNextLevel
+    LevelLabel.Text = "⭐ Nível: " .. currentLevel
     
-    local objName = obj.Name:lower()
-    local parentName = obj.Parent.Name:lower()
-    local grandparentName = obj.Parent.Parent and obj.Parent.Parent.Name:lower() or ""
-    
-    -- Verificar por nomes conhecidos
-    local bondNames = {
-        "bond", "bring", "dinheiro", "money", "cash", 
-        "dollar", "nota", "cedula", "coin", "bill",
-        "dinheiro_", "nota_", "money_", "cash_", "bond_"
-    }
-    
-    for _, name in pairs(bondNames) do
-        if objName:find(name) or parentName:find(name) or grandparentName:find(name) then
-            return true
-        end
-    end
-    
-    -- Verificar se é um RemotesEvent relacionado a coleta
-    if obj:IsA("RemoteEvent") then
-        local eventName = objName:lower()
-        if eventName:find("collect") or 
-           eventName:find("pick") or 
-           eventName:find("grab") or 
-           eventName:find("get") or 
-           eventName:find("remove") or 
-           eventName:find("bond") or
-           eventName:find("money") or
-           eventName:find("bring") then
-            return true
-        end
-    end
-    
-    -- Verificar se é ProximityPrompt ou ClickDetector
-    if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
-        if objName:find("bond") or 
-           objName:find("bring") or 
-           objName:find("pegar") or 
-           objName:find("coletar") or 
-           objName:find("collect") or
-           parentName:find("bond") or
-           parentName:find("bring") then
-            return true
-        end
-    end
-    
-    -- Verificar se é uma parte com TouchInterest
-    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
-        if objName:find("bond") or 
-           objName:find("bring") or 
-           objName:find("money") or
-           objName:find("cash") or
-           parentName:find("bond") or
-           parentName:find("bring") then
-            return true
-        end
-    end
-    
-    return false
+    local percent = (currentXP / xpToNextLevel) * 100
+    XPBarFill.Size = UDim2.new(percent / 100, 0, 1, 0)
 end
 
--- Função para encontrar e ativar RemotesEvents de coleta
-local function findAndActivateCollectionEvents()
-    local collectionEvents = {}
+-- Função para ganhar XP
+local function gainXP(amount)
+    currentXP = currentXP + amount
     
-    -- Procurar RemotesEvents no workspace e em serviços
-    local searchPlaces = {
-        Workspace,
-        game:GetService("ReplicatedStorage"),
-        game:GetService("ReplicatedFirst"),
-        game:GetService("Players")
-    }
-    
-    for _, place in pairs(searchPlaces) do
-        for _, obj in pairs(place:GetDescendants()) do
-            if obj:IsA("RemoteEvent") then
-                local eventName = obj.Name:lower()
-                if eventName:find("collect") or 
-                   eventName:find("pick") or 
-                   eventName:find("grab") or 
-                   eventName:find("get") or 
-                   eventName:find("remove") or 
-                   eventName:find("bond") or
-                   eventName:find("money") or
-                   eventName:find("bring") or
-                   eventName:find("take") then
-                    table.insert(collectionEvents, obj)
-                end
-            end
-        end
+    -- Verificar level up
+    while currentXP >= xpToNextLevel do
+        currentXP = currentXP - xpToNextLevel
+        currentLevel = currentLevel + 1
+        xpToNextLevel = math.floor(xpToNextLevel * 1.5) -- Aumenta XP necessário
+        
+        print("🎉 LEVEL UP! Agora você é nível " .. currentLevel)
     end
     
-    return collectionEvents
+    updateXPBar()
 end
 
--- Função para ativar RemotesEvents de coleta
-local function activateCollectionEvents()
-    local events = findAndActivateCollectionEvents()
-    local character = Player.Character
-    
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    
-    local rootPart = character.HumanoidRootPart
-    
-    for _, event in pairs(events) do
-        pcall(function()
-            -- Tentar ativar o evento de diferentes formas
-            event:FireServer()
-            
-            -- Tentar com argumentos
-            event:FireServer(rootPart)
-            event:FireServer(character)
-            event:FireServer(rootPart.Position)
-            
-            -- Tentar com o Bond mais próximo
-            local nearestBond = findNearestBond()
-            if nearestBond then
-                event:FireServer(nearestBond)
-                event:FireServer(nearestBond, rootPart)
-            end
-        end)
-    end
-end
-
--- Função para encontrar Bond mais próximo
-local function findNearestBond()
-    local character = Player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return nil
-    end
-    
-    local rootPart = character.HumanoidRootPart
-    local nearestBond = nil
-    local nearestDistance = math.huge
+-- Função para encontrar NPCs
+local function findNPCs()
+    local npcs = {}
     
     for _, obj in pairs(Workspace:GetDescendants()) do
-        if isBond(obj) then
-            local bondPosition = nil
+        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
+            local humanoid = obj:FindFirstChild("Humanoid")
+            local isPlayer = false
             
-            if obj:IsA("BasePart") then
-                bondPosition = obj.Position
-            elseif obj:IsA("Model") and obj.PrimaryPart then
-                bondPosition = obj.PrimaryPart.Position
-            elseif obj.Parent and obj.Parent:IsA("BasePart") then
-                bondPosition = obj.Parent.Position
+            -- Verificar se é player
+            for _, player in pairs(Players:GetPlayers()) do
+                if player.Character == obj then
+                    isPlayer = true
+                    break
+                end
             end
             
-            if bondPosition then
-                local distance = (rootPart.Position - bondPosition).Magnitude
-                if distance < nearestDistance then
-                    nearestDistance = distance
-                    nearestBond = obj
-                end
+            -- Verificar se é NPC com vida
+            if not isPlayer and humanoid.Health > 0 then
+                table.insert(npcs, obj)
             end
         end
     end
     
-    return nearestBond
+    return npcs
 end
 
--- Função para pegar Bond sem teleportar
-local function collectBondWithoutTeleport(bond)
-    if not isAutoBondActive then return end
-    
+-- Função para matar NPC
+local function killNPC(npc)
+    local humanoid = npc:FindFirstChild("Humanoid")
+    if humanoid then
+        humanoid.Health = 0
+        npcsKilled = npcsKilled + 1
+        
+        -- Ganhar XP aleatório
+        local xpGained = math.random(10, 30)
+        gainXP(xpGained)
+        
+        print("⚔️ NPC morto! +" .. xpGained .. " XP")
+    end
+end
+
+-- Função para atacar NPC
+local function attackNPC(npc)
     local character = Player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then
         return
     end
     
     local rootPart = character.HumanoidRootPart
+    local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
+    
+    if not npcRoot then return end
+    
+    -- Caminhar até o NPC
     local humanoid = character:FindFirstChild("Humanoid")
-    
-    -- Ativar RemotesEvents de coleta
-    local events = findAndActivateCollectionEvents()
-    for _, event in pairs(events) do
-        pcall(function()
-            event:FireServer(bond)
-            event:FireServer(bond, rootPart)
-            event:FireServer(bond, character)
-        end)
+    if humanoid then
+        humanoid:MoveTo(npcRoot.Position)
     end
     
-    -- Ativar ProximityPrompt sem teleportar
-    if bond:IsA("ProximityPrompt") then
-        pcall(function()
-            bond:InputHoldBegin()
-            task.wait(0.3)
-            bond:InputHoldEnd()
-            fireproximityprompt(bond)
-        end)
+    -- Verificar distância
+    local distance = (rootPart.Position - npcRoot.Position).Magnitude
+    
+    if distance < 5 then
+        -- Matar NPC
+        killNPC(npc)
     end
-    
-    -- Procurar ProximityPrompt nos filhos
-    if bond.Parent then
-        for _, child in pairs(bond.Parent:GetDescendants()) do
-            if child:IsA("ProximityPrompt") then
-                pcall(function()
-                    child:InputHoldBegin()
-                    task.wait(0.3)
-                    child:InputHoldEnd()
-                    fireproximityprompt(child)
-                end)
-            end
-            if child:IsA("ClickDetector") then
-                pcall(function()
-                    fireclickdetector(child)
-                end)
-            end
-        end
-    end
-    
-    -- Ativar TouchInterest sem teleportar
-    if bond:IsA("BasePart") and bond:FindFirstChild("TouchInterest") then
-        firetouchinterest(rootPart, bond, 0)
-        firetouchinterest(rootPart, bond, 1)
-    end
-    
-    -- Marcar como processado
-    processedBonds[tostring(bond)] = true
-    bondsCollected = bondsCollected + 1
-    BondsCollectedLabel.Text = "✅ Bonds Coletados: " .. bondsCollected
-    
-    print("💵 Bond ativado! Total: " .. bondsCollected)
 end
 
--- Função para contar Bonds no mapa
-local function countBondsOnMap()
-    local count = 0
+-- Função para iniciar Auto Farm
+local function startAutoFarm()
+    if isAutoFarmActive then return end
     
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if isBond(obj) and not processedBonds[tostring(obj)] then
-            count = count + 1
-        end
-    end
+    isAutoFarmActive = true
+    AutoFarmButton.Text = "⚔️ DESATIVAR AUTO FARM"
+    AutoFarmButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     
-    return count
-end
-
--- Função para iniciar Auto Bond
-local function startAutoBond()
-    if isAutoBondActive then return end
-    
-    isAutoBondActive = true
-    StatusLabel.Text = "Status: 🟢 Ativado"
-    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    AutoBondButton.Text = "🎯 DESATIVAR AUTO BOND"
-    AutoBondButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    
-    print("🎯 Auto Bond ATIVADO!")
-    print("💵 Ativando RemotesEvents de coleta...")
+    print("⚔️ Auto Farm ATIVADO!")
+    print("🔄 Procurando NPCs para matar...")
     
     -- Loop principal
-    autoBondConnections[#autoBondConnections + 1] = RunService.Heartbeat:Connect(function()
-        if isAutoBondActive then
-            -- Atualizar contagem
-            local bondCount = countBondsOnMap()
-            BondsOnMapLabel.Text = "💵 Bonds no Mapa: " .. bondCount
+    autoFarmConnections[#autoFarmConnections + 1] = RunService.Heartbeat:Connect(function()
+        if isAutoFarmActive then
+            local npcs = findNPCs()
             
-            -- Ativar eventos de coleta
-            activateCollectionEvents()
-            
-            -- Pegar Bonds sem teleportar
-            for _, obj in pairs(Workspace:GetDescendants()) do
-                if isAutoBondActive and isBond(obj) and not processedBonds[tostring(obj)] then
-                    collectBondWithoutTeleport(obj)
+            if #npcs > 0 then
+                -- Encontrar NPC mais próximo
+                local character = Player.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = character.HumanoidRootPart
+                    local nearestNPC = nil
+                    local nearestDistance = math.huge
+                    
+                    for _, npc in pairs(npcs) do
+                        local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
+                        if npcRoot then
+                            local distance = (rootPart.Position - npcRoot.Position).Magnitude
+                            if distance < nearestDistance then
+                                nearestDistance = distance
+                                nearestNPC = npc
+                            end
+                        end
+                    end
+                    
+                    if nearestNPC then
+                        attackNPC(nearestNPC)
+                    end
                 end
             end
         end
     end)
-    
-    -- Monitorar novos Bonds
-    autoBondConnections[#autoBondConnections + 1] = Workspace.DescendantAdded:Connect(function(descendant)
-        if isAutoBondActive and isBond(descendant) and not processedBonds[tostring(descendant)] then
-            task.wait(0.3)
-            if isAutoBondActive then
-                collectBondWithoutTeleport(descendant)
-            end
-        end
-    end)
 end
 
--- Função para parar Auto Bond
-local function stopAutoBond()
-    if not isAutoBondActive then return end
+-- Função para parar Auto Farm
+local function stopAutoFarm()
+    if not isAutoFarmActive then return end
     
-    isAutoBondActive = false
-    StatusLabel.Text = "Status: 🔴 Desativado"
-    StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    AutoBondButton.Text = "🎯 ATIVAR AUTO BOND"
-    AutoBondButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+    isAutoFarmActive = false
+    AutoFarmButton.Text = "⚔️ ATIVAR AUTO FARM"
+    AutoFarmButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
     
-    print("🎯 Auto Bond DESATIVADO!")
-    print("✅ Total de Bonds coletados: " .. bondsCollected)
+    print("⚔️ Auto Farm DESATIVADO!")
+    print("📊 Total de NPCs mortos: " .. npcsKilled)
     
-    for _, conn in pairs(autoBondConnections) do
+    for _, conn in pairs(autoFarmConnections) do
         conn:Disconnect()
     end
-    autoBondConnections = {}
+    autoFarmConnections = {}
 end
 
--- Toggle Auto Bond
-AutoBondButton.MouseButton1Click:Connect(function()
-    if isAutoBondActive then
-        stopAutoBond()
+-- Toggle Auto Farm
+AutoFarmButton.MouseButton1Click:Connect(function()
+    if isAutoFarmActive then
+        stopAutoFarm()
     else
-        startAutoBond()
+        startAutoFarm()
     end
 end)
 
@@ -446,37 +308,27 @@ end)
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
         MainFrame.Size = originalSize
-        StatusLabel.Visible = true
-        BondsOnMapLabel.Visible = true
-        BondsCollectedLabel.Visible = true
-        AutoBondButton.Visible = true
+        LevelLabel.Visible = true
+        XPLabel.Visible = true
+        XPBarBackground.Visible = true
+        XPBarFill.Visible = true
+        AutoFarmButton.Visible = true
         MinimizeButton.Text = "—"
         isMinimized = false
     else
         MainFrame.Size = UDim2.new(0, 300, 0, 35)
-        StatusLabel.Visible = false
-        BondsOnMapLabel.Visible = false
-        BondsCollectedLabel.Visible = false
-        AutoBondButton.Visible = false
+        LevelLabel.Visible = false
+        XPLabel.Visible = false
+        XPBarBackground.Visible = false
+        XPBarFill.Visible = false
+        AutoFarmButton.Visible = false
         MinimizeButton.Text = "+"
         isMinimized = true
     end
 end)
 
--- Limpar quando destruir
-ScreenGui.Destroying:Connect(function()
-    stopAutoBond()
-end)
+-- Inicializar barra de XP
+updateXPBar()
 
--- Reconectar quando morrer
-Player.CharacterAdded:Connect(function(character)
-    if isAutoBondActive then
-        task.wait(2)
-        print("🎯 Personagem renasceu, continuando Auto Bond...")
-        processedBonds = {}
-    end
-end)
-
-print("⚡ NoobHub - Auto Bond sem Teleporte carregado!")
-print("🎯 Ativa RemotesEvents de coleta sem teleportar!")
-print("💵 Verifica e pega Bonds naturalmente!")
+print("⚡ NoobHub - Sistema de XP carregado!")
+print("⚔️ Auto Farm pronto para matar NPCs!")
