@@ -1,6 +1,6 @@
 --[[
-    NoobHub v2.0 - Sistema de invisibilidade com GUI avançada
-    Features: Drag, Minimizar (bolinha), Confirmação dupla para fechar
+    NoobHub v2.1 - Sistema de invisibilidade com GUI avançada
+    Features: Drag corrigido, Minimizar (bolinha), Confirmação dupla para fechar
 ]]
 
 -- Limpeza de conexões anteriores
@@ -27,11 +27,12 @@ local janela = nil
 local botao = nil
 local botaoMinimizar = nil
 local botaoFechar = nil
+
+-- Variáveis para o sistema de drag (corrigido)
 local arrastando = false
-local posInicialDrag = nil
-local posJanelaDrag = nil
-local confirmacaoFechar = false
-local timerFechar = nil
+local dragInput = nil
+local dragStart = nil
+local startPos = nil
 
 -- Função para coletar partes do personagem
 local function coletarPartes()
@@ -178,6 +179,23 @@ local function solicitarFechamento()
     end
 end
 
+-- Função para atualizar posição do drag (corrigido)
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    local newX = startPos.X.Offset + delta.X
+    local newY = startPos.Y.Offset + delta.Y
+    
+    -- Manter dentro da tela
+    local viewportSize = game:GetService("GuiService"):GetScreenSize()
+    local maxX = viewportSize.X - janela.AbsoluteSize.X
+    local maxY = viewportSize.Y - janela.AbsoluteSize.Y
+    
+    newX = math.clamp(newX, 0, maxX)
+    newY = math.clamp(newY, 0, maxY)
+    
+    janela.Position = UDim2.new(0, newX, 0, newY)
+end
+
 -- Criar interface gráfica
 local function criarInterface()
     -- Criar ScreenGui
@@ -216,7 +234,7 @@ local function criarInterface()
     titulo.Size = UDim2.new(0.5, 0, 1, 0)
     titulo.Position = UDim2.new(0.05, 0, 0, 0)
     titulo.BackgroundTransparency = 1
-    titulo.Text = "🌟 NoobHub v2.0"
+    titulo.Text = "🌟 NoobHub v2.1"
     titulo.TextColor3 = Color3.fromRGB(255, 255, 255)
     titulo.TextSize = 14
     titulo.TextXAlignment = Enum.TextXAlignment.Left
@@ -298,30 +316,46 @@ local function criarInterface()
     botaoCorner.CornerRadius = UDim.new(0, 8)
     botaoCorner.Parent = botao
     
-    -- Sistema de drag (arrastar janela)
+    -- SISTEMA DE DRAG CORRIGIDO
+    -- Evento para iniciar o drag
     barraTitulo.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             arrastando = true
-            posInicialDrag = input.Position
-            posJanelaDrag = janela.Position
+            dragStart = input.Position
+            startPos = janela.Position
+            
+            -- Criar conexão para mover durante o drag
+            dragInput = game:GetService("RunService").Heartbeat:Connect(function()
+                if arrastando then
+                    local mouse = jogador:GetMouse()
+                    local delta = mouse.X - dragStart.X
+                    local deltaY = mouse.Y - dragStart.Y
+                    
+                    local newX = startPos.X.Offset + delta
+                    local newY = startPos.Y.Offset + deltaY
+                    
+                    -- Manter dentro da tela
+                    local viewportSize = game:GetService("GuiService"):GetScreenSize()
+                    local maxX = viewportSize.X - janela.AbsoluteSize.X
+                    local maxY = viewportSize.Y - janela.AbsoluteSize.Y
+                    
+                    newX = math.clamp(newX, 0, maxX)
+                    newY = math.clamp(newY, 0, maxY)
+                    
+                    janela.Position = UDim2.new(0, newX, 0, newY)
+                end
+            end)
         end
     end)
     
-    barraTitulo.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement and arrastando and not minimizado then
-            local delta = input.Position - posInicialDrag
-            janela.Position = UDim2.new(
-                posJanelaDrag.X.Scale, 
-                posJanelaDrag.X.Offset + delta.X,
-                posJanelaDrag.Y.Scale, 
-                posJanelaDrag.Y.Offset + delta.Y
-            )
-        end
-    end)
-    
+    -- Evento para finalizar o drag
     barraTitulo.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
             arrastando = false
+            if dragInput then
+                dragInput:Disconnect()
+                dragInput = nil
+            end
         end
     end)
     
@@ -400,10 +434,15 @@ _G.NoobHub = {
             timerFechar:Disconnect() 
             timerFechar = nil 
         end 
+        if dragInput then
+            dragInput:Disconnect()
+            dragInput = nil
+        end
     end
 }
 
-print("🌟 NoobHub v2.0 carregado com sucesso!")
+print("🌟 NoobHub v2.1 carregado com sucesso!")
+print("📌 Sistema de drag completamente corrigido!")
 print("📌 Clique em '➖' para minimizar (vira bolinha)")
 print("📌 Clique em '❌' (2x) para fechar o GUI")
 print("📌 Pressione 'G' para ativar/desativar a invisibilidade")
