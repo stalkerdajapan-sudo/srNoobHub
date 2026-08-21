@@ -1,47 +1,52 @@
 --[[
-    SrNoobHub - Universal Script
-    Sistema de Dupe com Quantidade Configurável
-    Versão Final
+    ❤️ SrNoobMega ❤️ - MEGA HUB UNIVERSAL
+    Versão Final Mobile
 ]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Lighting = game:GetService("Lighting")
+local RunService = game:GetService("RunService")
 
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local RootPart = Character:WaitForChild("HumanoidRootPart")
 local Backpack = Player:WaitForChild("Backpack")
+local Camera = workspace.CurrentCamera
 
--- Cores
+-- Cores Modernas
 local Colors = {
-    Background = Color3.fromRGB(25, 25, 35),
-    Secondary = Color3.fromRGB(35, 35, 50),
-    Accent = Color3.fromRGB(255, 70, 70),
-    Accent2 = Color3.fromRGB(70, 130, 255),
+    Background = Color3.fromRGB(15, 15, 25),
+    Secondary = Color3.fromRGB(25, 25, 40),
+    Accent = Color3.fromRGB(255, 50, 80),
+    Accent2 = Color3.fromRGB(80, 140, 255),
     Text = Color3.fromRGB(255, 255, 255),
-    TextDark = Color3.fromRGB(150, 150, 170),
-    Success = Color3.fromRGB(50, 200, 100),
-    Warning = Color3.fromRGB(255, 200, 0),
-    Danger = Color3.fromRGB(255, 80, 80)
+    TextDark = Color3.fromRGB(140, 140, 160),
+    Success = Color3.fromRGB(40, 200, 90),
+    Warning = Color3.fromRGB(255, 190, 0),
+    Danger = Color3.fromRGB(255, 70, 70),
+    Purple = Color3.fromRGB(160, 80, 255),
+    Cyan = Color3.fromRGB(0, 200, 200)
 }
 
--- Criar GUI Principal
-local SrNoobHub = Instance.new("ScreenGui")
-SrNoobHub.Name = "SrNoobHub"
-SrNoobHub.Parent = game.CoreGui
-SrNoobHub.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+-- Criar GUI
+local SrNoobMega = Instance.new("ScreenGui")
+SrNoobMega.Name = "SrNoobMega"
+SrNoobMega.Parent = game.CoreGui
+SrNoobMega.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+SrNoobMega.ResetOnSpawn = false
 
--- Container Principal
+-- Container Principal (Compacto para Mobile)
 local MainContainer = Instance.new("Frame")
 MainContainer.Name = "MainContainer"
-MainContainer.Parent = SrNoobHub
+MainContainer.Parent = SrNoobMega
 MainContainer.BackgroundColor3 = Colors.Background
 MainContainer.BorderSizePixel = 0
-MainContainer.Position = UDim2.new(0.5, -150, 0.5, -175)
-MainContainer.Size = UDim2.new(0, 300, 0, 450)
+MainContainer.Position = UDim2.new(0.5, -130, 0.5, -180)
+MainContainer.Size = UDim2.new(0, 260, 0, 350)
 MainContainer.ClipsDescendants = true
 MainContainer.ZIndex = 2
 
@@ -51,370 +56,368 @@ MainCorner.Parent = MainContainer
 
 -- Header
 local Header = Instance.new("Frame")
-Header.Name = "Header"
 Header.Parent = MainContainer
 Header.BackgroundColor3 = Colors.Secondary
 Header.BorderSizePixel = 0
-Header.Size = UDim2.new(1, 0, 0, 50)
+Header.Size = UDim2.new(1, 0, 0, 40)
 
 local HeaderCorner = Instance.new("UICorner")
 HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
--- Barra de gradiente
 local GradientBar = Instance.new("Frame")
-GradientBar.Name = "GradientBar"
 GradientBar.Parent = Header
 GradientBar.BackgroundColor3 = Colors.Accent
 GradientBar.BorderSizePixel = 0
-GradientBar.Position = UDim2.new(0, 0, 0, 48)
+GradientBar.Position = UDim2.new(0, 0, 0, 38)
 GradientBar.Size = UDim2.new(1, 0, 0, 2)
 
--- Título
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
 Title.Parent = Header
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Size = UDim2.new(0, 200, 0, 50)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.Size = UDim2.new(0, 160, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "🔥 SrNoobHub"
+Title.Text = "❤️ SrNoobMega"
 Title.TextColor3 = Colors.Text
-Title.TextSize = 16
+Title.TextSize = 12
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Subtítulo
-local Subtitle = Instance.new("TextLabel")
-Subtitle.Name = "Subtitle"
-Subtitle.Parent = Header
-Subtitle.BackgroundTransparency = 1
-Subtitle.Position = UDim2.new(0, 15, 0, 25)
-Subtitle.Size = UDim2.new(0, 200, 0, 20)
-Subtitle.Font = Enum.Font.Gotham
-Subtitle.Text = "Sistema de Dupe"
-Subtitle.TextColor3 = Colors.TextDark
-Subtitle.TextSize = 10
-Subtitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Botão Minimizar
 local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
 MinimizeButton.Parent = Header
 MinimizeButton.BackgroundColor3 = Colors.Warning
 MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Position = UDim2.new(1, -55, 0, 15)
+MinimizeButton.Position = UDim2.new(1, -45, 0, 10)
 MinimizeButton.Size = UDim2.new(0, 20, 0, 20)
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Text = "—"
 MinimizeButton.TextColor3 = Colors.Text
-MinimizeButton.TextSize = 14
+MinimizeButton.TextSize = 12
 
 local MinimizeCorner = Instance.new("UICorner")
 MinimizeCorner.CornerRadius = UDim.new(0, 4)
 MinimizeCorner.Parent = MinimizeButton
 
--- Botão Fechar
 local CloseButton = Instance.new("TextButton")
-CloseButton.Name = "CloseButton"
 CloseButton.Parent = Header
 CloseButton.BackgroundColor3 = Colors.Danger
 CloseButton.BorderSizePixel = 0
-CloseButton.Position = UDim2.new(1, -30, 0, 15)
+CloseButton.Position = UDim2.new(1, -20, 0, 10)
 CloseButton.Size = UDim2.new(0, 20, 0, 20)
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Text = "✕"
 CloseButton.TextColor3 = Colors.Text
-CloseButton.TextSize = 14
+CloseButton.TextSize = 12
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 4)
 CloseCorner.Parent = CloseButton
 
--- Conteúdo
-local ContentFrame = Instance.new("Frame")
-ContentFrame.Name = "ContentFrame"
+-- Conteúdo com Scroll
+local ContentFrame = Instance.new("ScrollingFrame")
 ContentFrame.Parent = MainContainer
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.BorderSizePixel = 0
-ContentFrame.Position = UDim2.new(0, 0, 0, 60)
-ContentFrame.Size = UDim2.new(1, 0, 1, -60)
+ContentFrame.Position = UDim2.new(0, 0, 0, 45)
+ContentFrame.Size = UDim2.new(1, 0, 1, -45)
+ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 750)
+ContentFrame.ScrollBarThickness = 3
+ContentFrame.ScrollBarImageColor3 = Colors.Accent
 
--- Função para criar botões
-local function CreateButton(parent, text, position, color)
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = ContentFrame
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+local UIPadding = Instance.new("UIPadding")
+UIPadding.Parent = ContentFrame
+UIPadding.PaddingLeft = UDim.new(0, 8)
+UIPadding.PaddingRight = UDim.new(0, 8)
+UIPadding.PaddingTop = UDim.new(0, 8)
+
+-- Função criar botão (maior para touch)
+local function CreateButton(text, color, callback)
     local button = Instance.new("TextButton")
-    button.Parent = parent
+    button.Parent = ContentFrame
     button.BackgroundColor3 = color
     button.BorderSizePixel = 0
-    button.Position = position
-    button.Size = UDim2.new(0, 270, 0, 40)
+    button.Size = UDim2.new(1, 0, 0, 35)
     button.Font = Enum.Font.GothamBold
     button.Text = text
     button.TextColor3 = Colors.Text
-    button.TextSize = 13
+    button.TextSize = 11
     button.AutoButtonColor = false
+    button.LayoutOrder = #ContentFrame:GetChildren() + 1
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
+    corner.CornerRadius = UDim.new(0, 6)
     corner.Parent = button
     
-    -- Efeito hover
     button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = color:Lerp(Color3.new(1, 1, 1), 0.1)}):Play()
+        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = color:Lerp(Color3.new(1,1,1), 0.15)}):Play()
     end)
     
     button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = color}):Play()
+        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = color}):Play()
     end)
     
+    button.MouseButton1Click:Connect(callback)
     return button
 end
 
--- Função para criar notificações
-local function CreateNotification(text, color)
-    local notification = Instance.new("Frame")
-    notification.Name = "Notification"
-    notification.Parent = SrNoobHub
-    notification.BackgroundColor3 = color
-    notification.BorderSizePixel = 0
-    notification.Position = UDim2.new(0.5, -100, 0, 20)
-    notification.Size = UDim2.new(0, 200, 0, 40)
-    notification.ZIndex = 3
+-- Função criar seção
+local function CreateSection(text)
+    local label = Instance.new("TextLabel")
+    label.Parent = ContentFrame
+    label.BackgroundTransparency = 1
+    label.Size = UDim2.new(1, 0, 0, 18)
+    label.Font = Enum.Font.GothamBold
+    label.Text = text
+    label.TextColor3 = Colors.Accent
+    label.TextSize = 10
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.LayoutOrder = #ContentFrame:GetChildren() + 1
+    return label
+end
+
+-- Notificação
+local function Notify(text, color)
+    local notif = Instance.new("Frame")
+    notif.Parent = SrNoobMega
+    notif.BackgroundColor3 = color
+    notif.BorderSizePixel = 0
+    notif.Position = UDim2.new(0.5, -70, 0, 10)
+    notif.Size = UDim2.new(0, 140, 0, 28)
+    notif.ZIndex = 5
     
     local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = notification
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = notif
     
     local label = Instance.new("TextLabel")
-    label.Parent = notification
+    label.Parent = notif
     label.BackgroundTransparency = 1
     label.Size = UDim2.new(1, 0, 1, 0)
     label.Font = Enum.Font.GothamBold
     label.Text = text
     label.TextColor3 = Colors.Text
-    label.TextSize = 12
+    label.TextSize = 9
     
-    -- Animar
-    notification.Position = UDim2.new(0.5, -100, 0, -40)
-    TweenService:Create(notification, TweenInfo.new(0.5, Enum.EasingStyle.Bounce), {Position = UDim2.new(0.5, -100, 0, 20)}):Play()
-    
-    wait(2)
-    TweenService:Create(notification, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -100, 0, -40)}):Play()
+    notif.Position = UDim2.new(0.5, -70, 0, -28)
+    TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -70, 0, 10)}):Play()
+    wait(1.5)
+    TweenService:Create(notif, TweenInfo.new(0.3), {Position = UDim2.new(0.5, -70, 0, -28)}):Play()
     wait(0.3)
-    notification:Destroy()
+    notif:Destroy()
 end
 
--- Label de quantidade
-local QuantityLabel = Instance.new("TextLabel")
-QuantityLabel.Name = "QuantityLabel"
-QuantityLabel.Parent = ContentFrame
-QuantityLabel.BackgroundTransparency = 1
-QuantityLabel.Position = UDim2.new(0, 15, 0, 5)
-QuantityLabel.Size = UDim2.new(0, 270, 0, 25)
-QuantityLabel.Font = Enum.Font.GothamBold
-QuantityLabel.Text = "📊 Quantidade de Duplicação:"
-QuantityLabel.TextColor3 = Colors.Text
-QuantityLabel.TextSize = 12
-QuantityLabel.TextXAlignment = Enum.TextXAlignment.Left
+-- ===== SISTEMAS =====
 
--- TextBox para quantidade
-local QuantityInput = Instance.new("TextBox")
-QuantityInput.Name = "QuantityInput"
-QuantityInput.Parent = ContentFrame
-QuantityInput.BackgroundColor3 = Colors.Secondary
-QuantityInput.BorderSizePixel = 0
-QuantityInput.Position = UDim2.new(0, 15, 0, 35)
-QuantityInput.Size = UDim2.new(0, 270, 0, 35)
-QuantityInput.Font = Enum.Font.GothamBold
-QuantityInput.Text = "1"
-QuantityInput.TextColor3 = Colors.Text
-QuantityInput.TextSize = 16
-QuantityInput.PlaceholderText = "1-10"
-QuantityInput.TextXAlignment = Enum.TextXAlignment.Center
+local speedValue = 16
+local jumpValue = 50
+local flyEnabled = false
+local noclipEnabled = false
+local espEnabled = false
+local antiAFKEnabled = false
 
-local QuantityCorner = Instance.new("UICorner")
-QuantityCorner.CornerRadius = UDim.new(0, 8)
-QuantityCorner.Parent = QuantityInput
+-- MOVIMENTO
+CreateSection("⚡ MOVIMENTO")
 
--- Validação da quantidade
-QuantityInput.FocusLost:Connect(function(enterPressed)
-    local value = tonumber(QuantityInput.Text)
-    if value then
-        value = math.clamp(math.floor(value), 1, 10)
-        QuantityInput.Text = tostring(value)
-    else
-        QuantityInput.Text = "1"
-    end
+CreateButton("⚡ SPEED+", Colors.Accent2, function()
+    speedValue += 5
+    Humanoid.WalkSpeed = speedValue
+    Notify("Speed: " .. speedValue, Colors.Accent2)
 end)
 
--- Botões do sistema
-local DupeButton = CreateButton(ContentFrame, "💎 DUPE ITEM SELECIONADO", UDim2.new(0, 15, 0, 80), Colors.Accent)
-local GrabAllButton = CreateButton(ContentFrame, "🎒 PEGAR TODOS ITENS", UDim2.new(0, 15, 0, 130), Colors.Success)
-local DropAllButton = CreateButton(ContentFrame, "📦 DROPAR TODOS ITENS", UDim2.new(0, 15, 0, 180), Colors.Accent2)
+CreateButton("⚡ SPEED-", Colors.Accent2, function()
+    speedValue = math.max(5, speedValue - 5)
+    Humanoid.WalkSpeed = speedValue
+    Notify("Speed: " .. speedValue, Colors.Accent2)
+end)
 
--- Info label
-local InfoLabel = Instance.new("TextLabel")
-InfoLabel.Parent = ContentFrame
-InfoLabel.BackgroundTransparency = 1
-InfoLabel.Position = UDim2.new(0, 15, 0, 230)
-InfoLabel.Size = UDim2.new(0, 270, 0, 30)
-InfoLabel.Font = Enum.Font.Gotham
-InfoLabel.Text = "⚠️ Quantidade: 1-10 | Use com moderação!"
-InfoLabel.TextColor3 = Colors.TextDark
-InfoLabel.TextSize = 11
-InfoLabel.TextXAlignment = Enum.TextXAlignment.Center
+CreateButton("🦘 JUMP+", Colors.Purple, function()
+    jumpValue += 10
+    Humanoid.JumpPower = jumpValue
+    Notify("Jump: " .. jumpValue, Colors.Purple)
+end)
 
--- Funções do sistema
-local function DupeItem(item, quantity)
-    if not item then
-        CreateNotification("❌ Nenhum item selecionado!", Colors.Danger)
-        return
-    end
-    
-    quantity = math.clamp(quantity or 1, 1, 10)
-    
-    local successCount = 0
-    
-    for i = 1, quantity do
-        local clonedItem = item:Clone()
-        
-        -- Tentar colocar no Backpack
-        if clonedItem:IsA("Tool") then
-            clonedItem.Parent = Backpack
-            successCount += 1
-        elseif clonedItem:IsA("HopperBin") then
-            clonedItem.Parent = Backpack
-            successCount += 1
-        else
-            -- Tentar no personagem
-            clonedItem.Parent = Character
-            successCount += 1
-        end
-        
-        wait(0.05) -- Pequena pausa para não sobrecarregar
-    end
-    
-    if successCount > 0 then
-        CreateNotification("✅ " .. successCount .. " itens duplicados!", Colors.Success)
-    else
-        CreateNotification("❌ Falha ao duplicar!", Colors.Danger)
-    end
-end
+CreateButton("🦘 JUMP-", Colors.Purple, function()
+    jumpValue = math.max(10, jumpValue - 10)
+    Humanoid.JumpPower = jumpValue
+    Notify("Jump: " .. jumpValue, Colors.Purple)
+end)
 
-local function GrabAllItems()
-    local itemsFound = 0
-    local itemsToGrab = {}
-    
-    -- Procurar itens no ReplicatedStorage
+-- EXPLOITS
+CreateSection("🕊️ EXPLOITS")
+
+CreateButton("🕊️ FLY", Colors.Accent, function()
+    flyEnabled = not flyEnabled
+    Notify(flyEnabled and "Fly ON" or "Fly OFF", flyEnabled and Colors.Success or Colors.Danger)
+end)
+
+CreateButton("👻 NOCLIP", Colors.Warning, function()
+    noclipEnabled = not noclipEnabled
+    Notify(noclipEnabled and "Noclip ON" or "Noclip OFF", noclipEnabled and Colors.Success or Colors.Danger)
+end)
+
+-- ITENS
+CreateSection("💎 ITENS")
+
+CreateButton("🎒 PEGAR TODOS ITENS", Colors.Success, function()
+    local count = 0
     for _, item in pairs(ReplicatedStorage:GetDescendants()) do
         if item:IsA("Tool") or item:IsA("HopperBin") then
-            table.insert(itemsToGrab, item)
-            itemsFound += 1
+            local clone = item:Clone()
+            clone.Parent = Backpack
+            count += 1
+        end
+    end
+    Notify("Pegou " .. count .. " itens!", Colors.Success)
+end)
+
+-- VISUAIS
+CreateSection("👁️ VISUAIS")
+
+CreateButton("👁️ ESP", Colors.Purple, function()
+    espEnabled = not espEnabled
+    Notify(espEnabled and "ESP ON" or "ESP OFF", espEnabled and Colors.Success or Colors.Danger)
+end)
+
+CreateButton("💡 FULLBRIGHT", Colors.Warning, function()
+    Lighting.Brightness = Lighting.Brightness == 2 and 1 or 2
+    Notify("Fullbright!", Colors.Warning)
+end)
+
+-- TELEPORTE
+CreateSection("🎯 TELEPORTE")
+
+CreateButton("🎯 TP RANDOM", Colors.Accent, function()
+    local players = Players:GetPlayers()
+    if #players > 1 then
+        local randomPlayer = players[math.random(1, #players)]
+        if randomPlayer ~= Player and randomPlayer.Character then
+            RootPart.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame
+            Notify("TP para " .. randomPlayer.Name, Colors.Accent)
+        end
+    else
+        Notify("Sem players!", Colors.Danger)
+    end
+end)
+
+CreateButton("🎯 CRIAR TP TOOL", Colors.Cyan, function()
+    local tool = Instance.new("Tool")
+    tool.Name = "TP Tool"
+    tool.RequiresHandle = false
+    tool.ToolTip = "Toque para teleportar"
+    
+    local function teleport()
+        local mouse = Player:GetMouse()
+        if mouse.Target then
+            RootPart.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0))
+            Notify("Teleportado!", Colors.Cyan)
         end
     end
     
-    -- Procurar em outros lugares comuns
-    local workspace = game:GetService("Workspace")
-    for _, item in pairs(workspace:GetDescendants()) do
-        if (item:IsA("Tool") or item:IsA("HopperBin")) and not item:IsDescendantOf(Character) then
-            table.insert(itemsToGrab, item)
-            itemsFound += 1
+    tool.Activated:Connect(teleport)
+    tool.Parent = Backpack
+    Notify("TP Tool criada!", Colors.Cyan)
+end)
+
+-- OUTROS
+CreateSection("⚙️ OUTROS")
+
+CreateButton("⏰ ANTI-AFK", Colors.Warning, function()
+    antiAFKEnabled = not antiAFKEnabled
+    Notify(antiAFKEnabled and "Anti-AFK ON" or "Anti-AFK OFF", antiAFKEnabled and Colors.Success or Colors.Danger)
+end)
+
+CreateButton("🔄 RESET", Colors.Danger, function()
+    Character:BreakJoints()
+    Notify("Resetado!", Colors.Danger)
+end)
+
+-- ===== SISTEMAS AVANÇADOS =====
+
+-- Fly System (Mobile - usa joystick)
+RunService.Heartbeat:Connect(function()
+    if flyEnabled and Character and RootPart then
+        local direction = Vector3.new()
+        
+        -- Usar joystick virtual do Roblox
+        local moveVector = Humanoid.MoveDirection
+        
+        if moveVector.Magnitude > 0 then
+            direction = moveVector
         end
-    end
-    
-    -- Clonar e adicionar ao inventário
-    for _, item in pairs(itemsToGrab) do
-        local clonedItem = item:Clone()
-        if clonedItem:IsA("Tool") or clonedItem:IsA("HopperBin") then
-            clonedItem.Parent = Backpack
+        
+        -- Controle de altura por botões
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            direction += Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            direction -= Vector3.new(0, 1, 0)
+        end
+        
+        if direction.Magnitude > 0 then
+            RootPart.Velocity = direction.Unit * 30
         else
-            clonedItem.Parent = Character
-        end
-        wait(0.01)
-    end
-    
-    if itemsFound > 0 then
-        CreateNotification("🎒 Pegou " .. itemsFound .. " itens!", Colors.Success)
-    else
-        CreateNotification("❌ Nenhum item encontrado!", Colors.Danger)
-    end
-end
-
-local function DropAllItems()
-    local droppedItems = 0
-    
-    -- Dropar itens do Backpack
-    for _, item in pairs(Backpack:GetChildren()) do
-        if item:IsA("Tool") or item:IsA("HopperBin") then
-            item.Parent = Character
-            wait(0.1)
-            if item:IsA("Tool") then
-                Humanoid:UnequipTools()
-            end
-            item.Parent = workspace
-            if item:IsA("Tool") and item.Handle then
-                item.Handle.Position = RootPart.Position + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
-            end
-            droppedItems += 1
-        end
-    end
-    
-    -- Dropar itens do personagem
-    for _, item in pairs(Character:GetChildren()) do
-        if (item:IsA("Tool") or item:IsA("HopperBin")) and item.Name ~= "Humanoid" then
-            item.Parent = workspace
-            if item:IsA("Tool") and item.Handle then
-                item.Handle.Position = RootPart.Position + Vector3.new(math.random(-5, 5), 0, math.random(-5, 5))
-            end
-            droppedItems += 1
-        end
-    end
-    
-    if droppedItems > 0 then
-        CreateNotification("📦 Dropou " .. droppedItems .. " itens!", Colors.Warning)
-    else
-        CreateNotification("❌ Nenhum item para dropar!", Colors.Danger)
-    end
-end
-
--- Sistema de seleção de item
-local selectedItem = nil
-
--- Função para duplicar item selecionado
-local function OnItemSelected(item)
-    selectedItem = item
-    CreateNotification("💎 Item selecionado: " .. item.Name, Colors.Accent2)
-end
-
--- Conectar eventos
-DupeButton.MouseButton1Click:Connect(function()
-    local quantity = tonumber(QuantityInput.Text) or 1
-    quantity = math.clamp(math.floor(quantity), 1, 10)
-    
-    if selectedItem then
-        DupeItem(selectedItem, quantity)
-    else
-        -- Tentar pegar item equipado
-        local equippedTool = Character:FindFirstChildOfClass("Tool")
-        if equippedTool then
-            DupeItem(equippedTool, quantity)
-        else
-            CreateNotification("❌ Selecione um item primeiro!", Colors.Danger)
+            RootPart.Velocity = Vector3.new(0, 0, 0)
         end
     end
 end)
 
-GrabAllButton.MouseButton1Click:Connect(GrabAllItems)
-DropAllButton.MouseButton1Click:Connect(DropAllItems)
+-- Noclip System
+RunService.Stepped:Connect(function()
+    if noclipEnabled and Character then
+        for _, part in pairs(Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = false
+            end
+        end
+    end
+end)
 
--- Drag System
+-- ESP System
+RunService.Heartbeat:Connect(function()
+    if espEnabled then
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= Player and otherPlayer.Character then
+                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if otherRoot and not otherRoot:FindFirstChild("ESP") then
+                    local esp = Instance.new("Highlight")
+                    esp.Name = "ESP"
+                    esp.Parent = otherRoot
+                    esp.FillColor = Color3.fromRGB(255, 0, 0)
+                    esp.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    esp.FillTransparency = 0.5
+                end
+            end
+        end
+    else
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer.Character then
+                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if otherRoot then
+                    local esp = otherRoot:FindFirstChild("ESP")
+                    if esp then esp:Destroy() end
+                end
+            end
+        end
+    end
+end)
+
+-- Anti-AFK
+RunService.Heartbeat:Connect(function()
+    if antiAFKEnabled then
+        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, nil)
+        wait(1)
+        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, nil)
+    end
+end)
+
+-- Drag System (Touch)
 local dragging = false
 local dragInput, dragStart, startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    local newPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    TweenService:Create(MainContainer, TweenInfo.new(0.1), {Position = newPos}):Play()
-end
 
 Header.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -438,38 +441,34 @@ end)
 
 UserInputService.InputChanged:Connect(function(input)
     if input == dragInput and dragging then
-        updateDrag(input)
+        local delta = input.Position - dragStart
+        MainContainer.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
 
--- Minimizar Sistema
+-- Minimizar
 local isMinimized = false
-
 MinimizeButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
-        TweenService:Create(MainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 300, 0, 50)}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 260, 0, 40)}):Play()
         MinimizeButton.Text = "+"
     else
-        TweenService:Create(MainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 300, 0, 450)}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 260, 0, 350)}):Play()
         MinimizeButton.Text = "—"
     end
 end)
 
 -- Fechar
 CloseButton.MouseButton1Click:Connect(function()
-    TweenService:Create(MainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 0, 0, 0)}):Play()
-    wait(0.3)
-    SrNoobHub:Destroy()
+    SrNoobMega:Destroy()
 end)
 
--- Atualizar personagem quando respawnar
+-- Atualizar personagem
 Player.CharacterAdded:Connect(function(newCharacter)
     Character = newCharacter
     Humanoid = Character:WaitForChild("Humanoid")
     RootPart = Character:WaitForChild("HumanoidRootPart")
 end)
 
--- Notificação inicial
-wait(1)
-CreateNotification("🔥 SrNoobHub Carregado!", Colors.Success)
+Notify("❤️ SrNoobMega Carregado!", Colors.Success)
