@@ -1,8 +1,8 @@
 --[[
-    SCRIPT: SrNoobHub - AIMLOCK PRO (Players + NPCs)
+    SCRIPT: SrNoobHub - AIMLOCK PRO (Players + NPCs) CORRIGIDO
     LOCAL: StarterGui (ScreenGui)
     AUTOR: SrNoob
-    VERSÃO: 6.0 - DUAL TARGET
+    VERSÃO: 7.0 - TOTALMENTE FUNCIONAL
 ]]
 
 local player = game.Players.LocalPlayer
@@ -12,61 +12,65 @@ local userInputService = game:GetService("UserInputService")
 local camera = workspace.CurrentCamera
 local heartbeat = game:GetService("RunService").Heartbeat
 
--- CONFIGURAÇÕES DO AIMBOT
+-- ===== CONFIGURAÇÕES =====
 local aimbotActive = true
 local smoothness = 0.25
 local fovRadius = 500
 local hitboxSize = 2.5
-local aimPart = "Head"
 local targetMode = "Both" -- "Players", "NPCs", "Both"
 
--- Criando a ScreenGui MODERNA
+-- ===== CORES MODERNAS =====
+local colors = {
+    primary = Color3.fromRGB(255, 215, 0),    -- Amarelo
+    secondary = Color3.fromRGB(0, 255, 150),  -- Verde
+    accent = Color3.fromRGB(0, 150, 255),     -- Azul
+    dark = Color3.fromRGB(15, 15, 25),
+    text = Color3.fromRGB(255, 255, 255),
+}
+
+-- ===== CRIANDO GUI =====
 local gui = Instance.new("ScreenGui")
 gui.Name = "SrNoobHub"
 gui.ResetOnSpawn = false
 gui.Parent = player.PlayerGui
 
--- CORES MODERNAS (Amarelo + Verde + Azul)
-local colors = {
-    primary = Color3.fromRGB(255, 215, 0),    -- Amarelo dourado
-    secondary = Color3.fromRGB(0, 255, 150),   -- Verde neon
-    accent = Color3.fromRGB(0, 150, 255),      -- Azul vibrante
-    dark = Color3.fromRGB(15, 15, 25),         -- Fundo escuro
-    text = Color3.fromRGB(255, 255, 255),      -- Branco
-    hover = Color3.fromRGB(255, 230, 50),      -- Amarelo claro
-}
-
--- FUNÇÃO PARA DETECTAR PLAYERS E NPCS
+-- ===== FUNÇÃO PARA DETECTAR PLAYERS E NPCS (CORRIGIDA) =====
 local function getAllTargets()
     local targets = {}
     
-    -- 1. DETECTAR PLAYERS
+    -- DETECTAR PLAYERS
     if targetMode == "Players" or targetMode == "Both" then
         for _, otherPlayer in pairs(game.Players:GetPlayers()) do
             if otherPlayer ~= player then
                 local character = otherPlayer.Character
-                if character and character:FindFirstChild("Head") then
-                    table.insert(targets, {
-                        type = "Player",
-                        name = otherPlayer.Name,
-                        character = character,
-                        head = character.Head,
-                        isPlayer = true
-                    })
+                if character then
+                    local head = character:FindFirstChild("Head")
+                    if head and character:FindFirstChild("Humanoid") then
+                        local humanoid = character:FindFirstChild("Humanoid")
+                        if humanoid and humanoid.Health > 0 then
+                            table.insert(targets, {
+                                type = "Player",
+                                name = otherPlayer.Name,
+                                character = character,
+                                head = head,
+                                isPlayer = true
+                            })
+                        end
+                    end
                 end
             end
         end
     end
     
-    -- 2. DETECTAR NPCS (Humanoids)
+    -- DETECTAR NPCS (CORRIGIDO)
     if targetMode == "NPCs" or targetMode == "Both" then
         for _, obj in pairs(workspace:GetDescendants()) do
             if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
                 local humanoid = obj:FindFirstChild("Humanoid")
                 if humanoid and humanoid.Health > 0 then
                     local head = obj:FindFirstChild("Head")
-                    if head and not obj:FindFirstChild("HumanoidRootPart"):FindFirstChild("Player") then
-                        -- Verifica se não é um player
+                    if head then
+                        -- Verifica se NÃO é um player
                         local isPlayer = false
                         for _, p in pairs(game.Players:GetPlayers()) do
                             if p.Character == obj then
@@ -74,6 +78,7 @@ local function getAllTargets()
                                 break
                             end
                         end
+                        
                         if not isPlayer then
                             table.insert(targets, {
                                 type = "NPC",
@@ -92,7 +97,7 @@ local function getAllTargets()
     return targets
 end
 
--- FUNÇÃO DE AIMLOCK MELHORADA (Players + NPCs)
+-- ===== FUNÇÃO PARA ENCONTRAR O ALVO MAIS PRÓXIMO =====
 local function getClosestTarget()
     local closestTarget = nil
     local closestDistance = math.huge
@@ -108,6 +113,7 @@ local function getClosestTarget()
                 local targetPos = Vector2.new(screenPos.X, screenPos.Y)
                 local distance = (mousePos - targetPos).Magnitude
                 
+                -- Aplica a hitbox
                 local adjustedDistance = distance / hitboxSize
                 
                 if adjustedDistance < closestDistance and distance < fovRadius then
@@ -121,14 +127,18 @@ local function getClosestTarget()
     return closestTarget, closestDistance
 end
 
--- FUNÇÃO DE AIMLOCK NA CABEÇA
-local function aimlockHead(target)
+-- ===== FUNÇÃO DE AIMLOCK (CORRIGIDA) =====
+local function aimlockTarget(target)
     if not target or not target.head then return end
     
+    -- Pega a posição da cabeça do alvo
     local targetPos = target.head.Position
     local currentPos = camera.CFrame.Position
+    
+    -- Cria o CFrame mirando na cabeça
     local newCFrame = CFrame.new(currentPos, targetPos)
     
+    -- Aplica smoothing
     if smoothness > 0 then
         camera.CFrame = camera.CFrame:Lerp(newCFrame, smoothness)
     else
@@ -136,39 +146,37 @@ local function aimlockHead(target)
     end
 end
 
--- LOOP PRINCIPAL
+-- ===== LOOP PRINCIPAL (CORRIGIDO) =====
 local currentTarget = nil
 local targetDistance = 0
 
+-- Loop principal usando Heartbeat
 heartbeat:Connect(function()
-    if not aimbotActive then return end
+    if not aimbotActive then 
+        currentTarget = nil
+        return 
+    end
     
     local target, dist = getClosestTarget()
     if target then
         currentTarget = target
         targetDistance = dist
-        aimlockHead(target)
+        aimlockTarget(target)
     else
         currentTarget = nil
         targetDistance = 0
     end
 end)
 
+-- Loop secundário para garantir
 runService.RenderStepped:Connect(function()
-    if not aimbotActive then return end
-    if currentTarget then
-        aimlockHead(currentTarget)
-    end
+    if not aimbotActive or not currentTarget then return end
+    aimlockTarget(currentTarget)
 end)
 
-mouse.Move:Connect(function()
-    if not aimbotActive then return end
-    if currentTarget then
-        aimlockHead(currentTarget)
-    end
-end)
+-- ===== FUNÇÕES DA GUI =====
 
--- GUI MODERNA (Amarelo + Verde + Azul)
+-- Botão de Drag
 local function createDragButton(frame)
     local dragBtn = Instance.new("TextButton")
     dragBtn.Size = UDim2.new(0, 35, 0, 35)
@@ -210,47 +218,38 @@ local function createDragButton(frame)
     end)
 end
 
--- FRAME PRINCIPAL MODERNO
+-- ===== CONSTRUINDO GUI =====
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 280, 0, 270)
-mainFrame.Position = UDim2.new(0.5, -140, 0.5, -135)
+mainFrame.Size = UDim2.new(0, 280, 0, 280)
+mainFrame.Position = UDim2.new(0.5, -140, 0.5, -140)
 mainFrame.BackgroundColor3 = colors.dark
-mainFrame.BackgroundTransparency = 0.05
+mainFrame.BackgroundTransparency = 0.1
 mainFrame.BorderSizePixel = 0
 mainFrame.Active = true
 mainFrame.Draggable = true
 mainFrame.Parent = gui
 
--- Borda gradiente moderna
-local borderGradient = Instance.new("UIGradient")
-borderGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, colors.primary),
-    ColorSequenceKeypoint.new(0.5, colors.secondary),
-    ColorSequenceKeypoint.new(1, colors.accent)
-})
-borderGradient.Parent = mainFrame
-
+-- Arredondamento
 local corner = Instance.new("UICorner")
 corner.CornerRadius = UDim.new(0, 15)
 corner.Parent = mainFrame
 
--- Sombra
-local shadow = Instance.new("ImageLabel")
-shadow.Size = UDim2.new(1, 20, 1, 20)
-shadow.Position = UDim2.new(0, -10, 0, -10)
-shadow.BackgroundTransparency = 1
-shadow.Image = "rbxassetid://131604333"
-shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
-shadow.ImageTransparency = 0.5
-shadow.ZIndex = 0
-shadow.Parent = mainFrame
+-- Gradiente de fundo
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, colors.primary),
+    ColorSequenceKeypoint.new(0.5, colors.secondary),
+    ColorSequenceKeypoint.new(1, colors.accent)
+})
+gradient.Rotation = 45
+gradient.Parent = mainFrame
 
--- TÍTULO MODERNO
+-- TÍTULO
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 45)
 title.Position = UDim2.new(0, 0, 0, 0)
 title.BackgroundColor3 = colors.primary
-title.BackgroundTransparency = 0.15
+title.BackgroundTransparency = 0.2
 title.Text = "✦ SrNoobHub ✦"
 title.TextColor3 = colors.text
 title.TextScaled = true
@@ -292,31 +291,18 @@ local btnCorner = Instance.new("UICorner")
 btnCorner.CornerRadius = UDim.new(0, 10)
 btnCorner.Parent = toggleBtn
 
--- Efeito glow no botão
-local glow = Instance.new("ImageLabel")
-glow.Size = UDim2.new(1, 10, 1, 10)
-glow.Position = UDim2.new(0, -5, 0, -5)
-glow.BackgroundTransparency = 1
-glow.Image = "rbxassetid://131604333"
-glow.ImageColor3 = colors.secondary
-glow.ImageTransparency = 0.7
-glow.ZIndex = 0
-glow.Parent = toggleBtn
-
 toggleBtn.MouseButton1Click:Connect(function()
     aimbotActive = not aimbotActive
     if aimbotActive then
         toggleBtn.BackgroundColor3 = colors.secondary
         toggleBtn.Text = "⚡ AIMLOCK: ON"
-        glow.ImageColor3 = colors.secondary
     else
         toggleBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
         toggleBtn.Text = "⛔ AIMLOCK: OFF"
-        glow.ImageColor3 = Color3.fromRGB(200, 50, 50)
     end
 end)
 
--- SELECTOR DE ALVO (Players/NPCs/Both)
+-- SELECTOR DE ALVO
 local targetLabel = Instance.new("TextLabel")
 targetLabel.Size = UDim2.new(0.3, -5, 0, 20)
 targetLabel.Position = UDim2.new(0, 5, 0, 115)
@@ -470,7 +456,7 @@ end)
 -- STATUS LABEL
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Size = UDim2.new(1, 0, 0, 30)
-statusLabel.Position = UDim2.new(0, 0, 0, 230)
+statusLabel.Position = UDim2.new(0, 0, 0, 240)
 statusLabel.BackgroundTransparency = 1
 statusLabel.Text = "💡 F1 toggle | Alvo: Nenhum"
 statusLabel.TextColor3 = colors.text
@@ -487,9 +473,8 @@ runService.RenderStepped:Connect(function()
     
     if currentTarget then
         local tipo = currentTarget.isPlayer and "👤" or "🤖"
-        local hitboxStatus = string.format("(H:%.1f)", hitboxSize)
-        statusLabel.Text = string.format("%s %s %s (%.0fpx)", 
-            tipo, currentTarget.name, hitboxStatus, targetDistance)
+        statusLabel.Text = string.format("%s %s (%.0fpx)", 
+            tipo, currentTarget.name, targetDistance)
     else
         statusLabel.Text = "💡 F1 toggle | Procurando alvos..."
     end
@@ -524,7 +509,7 @@ minimizeBtn.MouseButton1Click:Connect(function()
             element.Visible = false
         end
     else
-        mainFrame.Size = UDim2.new(0, 280, 0, 270)
+        mainFrame.Size = UDim2.new(0, 280, 0, 280)
         minimizeBtn.Text = "−"
         for _, element in pairs(guiElements) do
             element.Visible = true
@@ -532,86 +517,46 @@ minimizeBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- SISTEMA DE NOTIFICAÇÃO MODERNA
-local function createNotification(text, color)
+-- NOTIFICAÇÃO
+local function createNotification(text)
     local notif = Instance.new("TextLabel")
     notif.Size = UDim2.new(0, 300, 0, 40)
     notif.Position = UDim2.new(0.5, -150, 0, 10)
-    notif.BackgroundColor3 = color or colors.primary
+    notif.BackgroundColor3 = colors.primary
+    notif.BackgroundTransparency = 0.1
     notif.Text = text
     notif.TextColor3 = colors.text
     notif.TextScaled = true
     notif.Font = Enum.Font.GothamBold
-    notif.BackgroundTransparency = 0.1
     notif.Parent = gui
     
     local notifCorner = Instance.new("UICorner")
     notifCorner.CornerRadius = UDim.new(0, 10)
     notifCorner.Parent = notif
     
-    local glowNotif = Instance.new("UIGradient")
-    glowNotif.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, colors.primary),
-        ColorSequenceKeypoint.new(0.5, colors.secondary),
-        ColorSequenceKeypoint.new(1, colors.accent)
-    })
-    glowNotif.Parent = notif
-    
     game:GetService("Debris"):AddItem(notif, 3)
 end
 
--- NOTIFICAÇÕES INICIAIS
-createNotification("✦ SrNoobHub v6.0 - AIMLOCK PRO ✦", colors.primary)
-createNotification("🎯 Players + NPCs detectados!", colors.secondary)
-createNotification("📐 Hitbox ajustável | F1 para toggle", colors.accent)
+createNotification("✦ SrNoobHub v7.0 - TOTALMENTE FUNCIONAL ✦")
 
--- LOOP DE SEGURANÇA
+-- TESTE DE FUNCIONAMENTO
+print("═══════════════════════════════════")
+print("✅ SrNoobHub v7.0 CARREGADO!")
+print("🎯 Players + NPCs detectados!")
+print("📐 Hitbox: " .. hitboxSize)
+print("⚡ Suavidade: " .. smoothness)
+print("👁️ FOV: " .. fovRadius)
+print("💡 F1 para ativar/desativar")
+print("═══════════════════════════════════")
+
+-- VERIFICAR SE ESTÁ FUNCIONANDO
 spawn(function()
-    while wait(5) do
-        if aimbotActive and not currentTarget then
-            local target, dist = getClosestTarget()
-            if target then
-                currentTarget = target
-                targetDistance = dist
-                local tipo = target.isPlayer and "Player" or "NPC"
-                print("🎯 ALVO ENCONTRADO: " .. target.name .. " (" .. tipo .. ")")
+    while wait(3) do
+        if aimbotActive then
+            local targets = getAllTargets()
+            if #targets > 0 then
+                print("🔍 " .. #targets .. " alvos encontrados!")
             end
         end
     end
 end)
-
--- INFO CONSOLE
-print("═══════════════════════════════════")
-print("✨ SrNoobHub v6.0 - AIMLOCK PRO ✨")
-print("═══════════════════════════════════")
-print("🎯 Players + NPCs detectados!")
-print("👤 Players e 🤖 NPCs")
-print("📐 Hitbox ajustável: " .. hitboxSize)
-print("⚡ Suavidade: " .. smoothness)
-print("👁️ FOV: " .. fovRadius)
-print("💡 F1 para ativar/desativar")
-print("═══════════════════════════════════")  
-        -- Atualiza o aimbot (precisa modificar o script original)
-        _G.AimbotActive = aimActive
-    end)
-    
-    local invisActive = false
-    invisBtn.MouseButton1Click:Connect(function()
-        local remote = ReplicatedStorage:FindFirstChild("ToggleInvisibility")
-        if remote then
-            remote:FireServer()
-            invisActive = not invisActive
-            invisBtn.BackgroundColor3 = invisActive and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
-            invisBtn.Text = invisActive and "INV: ON" or "INV: OFF"
-        end
-    end)
-    
-    -- Remove o botão antigo (se existir)
-    local oldBtn = mainFrame:FindFirstChild("ToggleBtn")
-    if oldBtn then
-        oldBtn:Destroy()
-    end
-end
-
--- Substitua a função createInvisibilityButton por esta se quiser ambos os botões
--- createBothButtons()
