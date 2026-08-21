@@ -6,18 +6,17 @@
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local RootPart = Character:WaitForChild("HumanoidRootPart")
 
--- Cores Premium
+-- Cores
 local Colors = {
-    Background = Color3.fromRGB(10, 10, 18),
-    Secondary = Color3.fromRGB(20, 20, 35),
-    Tertiary = Color3.fromRGB(30, 30, 50),
+    Background = Color3.fromRGB(15, 15, 25),
+    Secondary = Color3.fromRGB(25, 25, 40),
+    Tertiary = Color3.fromRGB(35, 35, 55),
     Accent = Color3.fromRGB(255, 60, 90),
     Accent2 = Color3.fromRGB(90, 140, 255),
     Text = Color3.fromRGB(255, 255, 255),
@@ -49,23 +48,8 @@ MainContainer.ClipsDescendants = true
 MainContainer.ZIndex = 2
 
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 14)
+MainCorner.CornerRadius = UDim.new(0, 12)
 MainCorner.Parent = MainContainer
-
--- Sombra
-local Shadow = Instance.new("Frame")
-Shadow.Name = "Shadow"
-Shadow.Parent = SrNoobMega
-Shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-Shadow.BackgroundTransparency = 0.6
-Shadow.BorderSizePixel = 0
-Shadow.Position = UDim2.new(0.5, -157, 0.5, -217)
-Shadow.Size = UDim2.new(0, 320, 0, 440)
-Shadow.ZIndex = 1
-
-local ShadowCorner = Instance.new("UICorner")
-ShadowCorner.CornerRadius = UDim.new(0, 14)
-ShadowCorner.Parent = Shadow
 
 -- Header
 local Header = Instance.new("Frame")
@@ -76,10 +60,9 @@ Header.Size = UDim2.new(1, 0, 0, 50)
 Header.ZIndex = 3
 
 local HeaderCorner = Instance.new("UICorner")
-HeaderCorner.CornerRadius = UDim.new(0, 14)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
 HeaderCorner.Parent = Header
 
--- Gradiente animado
 local GradientBar = Instance.new("Frame")
 GradientBar.Parent = Header
 GradientBar.BackgroundColor3 = Colors.Accent
@@ -87,43 +70,17 @@ GradientBar.BorderSizePixel = 0
 GradientBar.Position = UDim2.new(0, 0, 0, 48)
 GradientBar.Size = UDim2.new(1, 0, 0, 2)
 
-local function animateGradient()
-    spawn(function()
-        while true do
-            for _, color in pairs({Colors.Accent, Colors.Purple, Colors.Cyan, Colors.Gold, Colors.Accent}) do
-                TweenService:Create(GradientBar, TweenInfo.new(0.5), {BackgroundColor3 = color}):Play()
-                wait(0.5)
-            end
-        end
-    end)
-end
-animateGradient()
-
--- Título
 local Title = Instance.new("TextLabel")
 Title.Parent = Header
 Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 15, 0, 0)
 Title.Size = UDim2.new(0, 200, 0, 50)
-Title.Font = Enum.Font.GothamBlack
+Title.Font = Enum.Font.GothamBold
 Title.Text = "⭐ ADMIN PANEL"
 Title.TextColor3 = Colors.Gold
 Title.TextSize = 16
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
--- Subtítulo
-local Subtitle = Instance.new("TextLabel")
-Subtitle.Parent = Header
-Subtitle.BackgroundTransparency = 1
-Subtitle.Position = UDim2.new(0, 15, 0, 25)
-Subtitle.Size = UDim2.new(0, 200, 0, 20)
-Subtitle.Font = Enum.Font.Gotham
-Subtitle.Text = "Server-Side Control"
-Subtitle.TextColor3 = Colors.TextDark
-Subtitle.TextSize = 9
-Subtitle.TextXAlignment = Enum.TextXAlignment.Left
-
--- Botão Minimizar
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Parent = Header
 MinimizeButton.BackgroundColor3 = Colors.Warning
@@ -134,12 +91,12 @@ MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Text = "—"
 MinimizeButton.TextColor3 = Colors.Text
 MinimizeButton.TextSize = 14
+MinimizeButton.AutoButtonColor = false
 
 local MinimizeCorner = Instance.new("UICorner")
 MinimizeCorner.CornerRadius = UDim.new(0, 5)
 MinimizeCorner.Parent = MinimizeButton
 
--- Botão Fechar
 local CloseButton = Instance.new("TextButton")
 CloseButton.Parent = Header
 CloseButton.BackgroundColor3 = Colors.Danger
@@ -150,6 +107,7 @@ CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Text = "✕"
 CloseButton.TextColor3 = Colors.Text
 CloseButton.TextSize = 14
+CloseButton.AutoButtonColor = false
 
 local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 5)
@@ -186,6 +144,7 @@ PlayerList.Size = UDim2.new(0, 290, 0, 200)
 PlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
 PlayerList.ScrollBarThickness = 4
 PlayerList.ScrollBarImageColor3 = Colors.Accent
+PlayerList.ZIndex = 3
 
 local ListCorner = Instance.new("UICorner")
 ListCorner.CornerRadius = UDim.new(0, 8)
@@ -235,34 +194,11 @@ local function UpdatePlayerList()
             playerButton.TextXAlignment = Enum.TextXAlignment.Left
             playerButton.AutoButtonColor = false
             playerButton.LayoutOrder = i
+            playerButton.ZIndex = 4
             
             local playerCorner = Instance.new("UICorner")
             playerCorner.CornerRadius = UDim.new(0, 5)
             playerCorner.Parent = playerButton
-            
-            -- Status do player
-            local statusIndicator = Instance.new("Frame")
-            statusIndicator.Name = "Status"
-            statusIndicator.Parent = playerButton
-            statusIndicator.BackgroundColor3 = Colors.Success
-            statusIndicator.BorderSizePixel = 0
-            statusIndicator.Position = UDim2.new(1, -15, 0, 10)
-            statusIndicator.Size = UDim2.new(0, 10, 0, 10)
-            statusIndicator.ZIndex = 3
-            
-            local statusCorner = Instance.new("UICorner")
-            statusCorner.CornerRadius = UDim.new(0, 5)
-            statusCorner.Parent = statusIndicator
-            
-            playerButton.MouseEnter:Connect(function()
-                TweenService:Create(playerButton, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(40, 40, 60)}):Play()
-            end)
-            
-            playerButton.MouseLeave:Connect(function()
-                if SelectedButton ~= playerButton then
-                    TweenService:Create(playerButton, TweenInfo.new(0.15), {BackgroundColor3 = Colors.Tertiary}):Play()
-                end
-            end)
             
             playerButton.MouseButton1Click:Connect(function()
                 SelectedPlayer = otherPlayer
@@ -278,6 +214,7 @@ local function UpdatePlayerList()
                 playerButton.BackgroundColor3 = Colors.Accent
                 SelectedButton = playerButton
                 
+                SelectedLabel.Text = "Selecionado: " .. otherPlayer.Name
                 Notify("Selecionado: " .. otherPlayer.Name, Colors.Cyan)
             end)
         end
@@ -295,6 +232,7 @@ SelectedLabel.Text = "Selecionado: Nenhum"
 SelectedLabel.TextColor3 = Colors.TextDark
 SelectedLabel.TextSize = 10
 SelectedLabel.TextXAlignment = Enum.TextXAlignment.Center
+SelectedLabel.ZIndex = 3
 
 -- Função para criar botão de ação
 local function CreateActionButton(text, color, position, callback)
@@ -309,18 +247,11 @@ local function CreateActionButton(text, color, position, callback)
     button.TextColor3 = Colors.Text
     button.TextSize = 11
     button.AutoButtonColor = false
+    button.ZIndex = 3
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 7)
     corner.Parent = button
-    
-    button.MouseEnter:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = color:Lerp(Color3.new(1,1,1), 0.15)}):Play()
-    end)
-    
-    button.MouseLeave:Connect(function()
-        TweenService:Create(button, TweenInfo.new(0.15), {BackgroundColor3 = color}):Play()
-    end)
     
     button.MouseButton1Click:Connect(callback)
     return button
@@ -363,7 +294,6 @@ end
 CreateActionButton("👢 KICK", Colors.Danger, UDim2.new(0, 15, 0, 270), function()
     if SelectedPlayer then
         Notify("Kickando " .. SelectedPlayer.Name, Colors.Danger)
-        -- Server-side kick
         pcall(function()
             SelectedPlayer:Kick("Kickado pelo Admin Panel")
         end)
@@ -387,11 +317,10 @@ CreateActionButton("💀 KILL", Colors.Accent, UDim2.new(0, 165, 0, 270), functi
     end
 end)
 
--- Botão OP (Dar poderes)
+-- Botão OP
 CreateActionButton("⚡ DAR OP", Colors.Gold, UDim2.new(0, 15, 0, 315), function()
     if SelectedPlayer then
         Notify("OP para " .. SelectedPlayer.Name, Colors.Gold)
-        -- Dar speed e jump
         if SelectedPlayer.Character then
             local targetHumanoid = SelectedPlayer.Character:FindFirstChild("Humanoid")
             if targetHumanoid then
@@ -461,16 +390,9 @@ CloseButton.MouseButton1Click:Connect(function()
     SrNoobMega:Destroy()
 end)
 
--- Atualizar player selected
-SelectedLabel:GetPropertyChangedSignal("Text"):Connect(function()
-    if SelectedPlayer then
-        SelectedLabel.Text = "Selecionado: " .. SelectedPlayer.Name
-    end
-end)
-
 -- Auto-atualizar lista
 spawn(function()
-    while wait(5) do
+    while wait(3) do
         if SrNoobMega.Parent then
             UpdatePlayerList()
         end
