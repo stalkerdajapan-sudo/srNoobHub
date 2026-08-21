@@ -1,11 +1,14 @@
 --[[
-    NoobHub - Sistema de Alvo
-    Todos NPCs te atacam: "MATE ELE É O PLAYER 😡"
+    NoobHub - Auto Bond para Dead Rails
+    Detecta e pega Bond da Bring automaticamente
+    Com sistema de ativar e desativar
 ]]
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -16,8 +19,8 @@ ScreenGui.ResetOnSpawn = false
 -- Criar Frame principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 80)
-MainFrame.Position = UDim2.new(0.5, -125, 0.1, -40)
+MainFrame.Size = UDim2.new(0, 250, 0, 150)
+MainFrame.Position = UDim2.new(0.5, -125, 0.1, -75)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -66,254 +69,308 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 5)
 MinCorner.Parent = MinimizeButton
 
--- Botão Sistema de Alvo
-local TargetButton = Instance.new("TextButton")
-TargetButton.Size = UDim2.new(0.9, 0, 0, 30)
-TargetButton.Position = UDim2.new(0.05, 0, 0.5, 0)
-TargetButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-TargetButton.BorderSizePixel = 0
-TargetButton.Text = "😡 ATIVAR MODO ALVO"
-TargetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TargetButton.TextSize = 12
-TargetButton.Font = Enum.Font.GothamBold
-TargetButton.Parent = MainFrame
+-- Status Label
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.3, 0)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Status: 🔴 Desativado"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+StatusLabel.TextSize = 13
+StatusLabel.Font = Enum.Font.Gotham
+StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+StatusLabel.Parent = MainFrame
 
-local TargetCorner = Instance.new("UICorner")
-TargetCorner.CornerRadius = UDim.new(0, 5)
-TargetCorner.Parent = TargetButton
+-- Bond Count Label
+local BondCountLabel = Instance.new("TextLabel")
+BondCountLabel.Size = UDim2.new(0.9, 0, 0, 25)
+BondCountLabel.Position = UDim2.new(0.05, 0, 0.5, 0)
+BondCountLabel.BackgroundTransparency = 1
+BondCountLabel.Text = "Bonds Coletados: 0"
+BondCountLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+BondCountLabel.TextSize = 13
+BondCountLabel.Font = Enum.Font.Gotham
+BondCountLabel.TextXAlignment = Enum.TextXAlignment.Left
+BondCountLabel.Parent = MainFrame
+
+-- Botão Auto Bond
+local AutoBondButton = Instance.new("TextButton")
+AutoBondButton.Size = UDim2.new(0.9, 0, 0, 35)
+AutoBondButton.Position = UDim2.new(0.05, 0, 0.7, 0)
+AutoBondButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+AutoBondButton.BorderSizePixel = 0
+AutoBondButton.Text = "🎯 ATIVAR AUTO BOND"
+AutoBondButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+AutoBondButton.TextSize = 12
+AutoBondButton.Font = Enum.Font.GothamBold
+AutoBondButton.Parent = MainFrame
+
+local AutoBondCorner = Instance.new("UICorner")
+AutoBondCorner.CornerRadius = UDim.new(0, 5)
+AutoBondCorner.Parent = AutoBondButton
 
 -- Variáveis
-local isTargetMode = false
+local isAutoBondActive = false
 local isMinimized = false
 local originalSize = MainFrame.Size
-local targetConnections = {}
-local npcList = {}
+local bondCount = 0
+local autoBondConnections = {}
+local bondDetected = nil
+local collectingBond = false
 
--- Função para coletar todos NPCs
-local function collectNPCs()
-    local npcs = {}
+-- Função para detectar Bond da Bring
+local function detectBond()
+    local bondItems = {}
     
-    -- Procurar por modelos com Humanoid que não são players
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-            local humanoid = obj:FindFirstChild("Humanoid")
-            local isPlayer = false
+    -- Procurar por Bonds no workspace
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("BasePart") or obj:IsA("Model") or obj:IsA("Tool") then
+            local name = obj.Name:lower()
             
-            -- Verificar se é player
-            for _, player in pairs(Players:GetPlayers()) do
-                if player.Character == obj then
-                    isPlayer = true
-                    break
+            -- Diferentes nomes possíveis para Bond
+            if name:find("bond") or 
+               name:find("bring") or 
+               name:find("dinheiro") or
+               name:find("money") or
+               name:find("cash") or
+               name:find("dollar") or
+               name:find("nota") or
+               name:find("cédula") or
+               name:find("cedula") or
+               name:find("real") or
+               name:find("reais") then
+                
+                -- Verificar se é um item coletável
+                local isCollectable = true
+                
+                -- Se for Model, verificar se tem partes
+                if obj:IsA("Model") then
+                    local hasParts = false
+                    for _, child in pairs(obj:GetChildren()) do
+                        if child:IsA("BasePart") then
+                            hasParts = true
+                            break
+                        end
+                    end
+                    if not hasParts then
+                        isCollectable = false
+                    end
                 end
-            end
-            
-            -- Se não é player e tem vida
-            if not isPlayer and humanoid.Health > 0 then
-                table.insert(npcs, obj)
+                
+                if isCollectable then
+                    table.insert(bondItems, obj)
+                end
             end
         end
     end
     
-    return npcs
+    -- Também procurar por ProximityPrompts ou ClickDetectors relacionados a Bond
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
+            local parent = obj.Parent
+            if parent then
+                local name = parent.Name:lower()
+                if name:find("bond") or name:find("bring") or name:find("dinheiro") or name:find("money") then
+                    table.insert(bondItems, parent)
+                end
+            end
+        end
+    end
+    
+    return bondItems
 end
 
--- Função para forçar NPC atacar
-local function forceNPCsToAttack()
-    if not isTargetMode then return end
+-- Função para coletar Bond
+local function collectBond(bond)
+    if collectingBond then return end
+    collectingBond = true
     
     local character = Player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then
+        collectingBond = false
         return
     end
     
     local rootPart = character.HumanoidRootPart
-    npcList = collectNPCs()
+    local humanoid = character:FindFirstChild("Humanoid")
     
-    for _, npc in pairs(npcList) do
-        if npc and npc.Parent and isTargetMode then
-            local npcHumanoid = npc:FindFirstChild("Humanoid")
-            local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
-            
-            if npcHumanoid and npcRoot then
-                -- Fazer NPC olhar para o player
-                npcRoot.CFrame = CFrame.lookAt(npcRoot.Position, Vector3.new(rootPart.Position.X, npcRoot.Position.Y, rootPart.Position.Z))
-                
-                -- Forçar NPC a se mover até o player
-                npcHumanoid:MoveTo(rootPart.Position)
-                
-                -- Aumentar agressividade
-                npcHumanoid.WalkSpeed = 25
-                npcHumanoid.JumpPower = 60
-                
-                -- Tentar fazer NPC atacar
-                local attackDistance = (npcRoot.Position - rootPart.Position).Magnitude
-                
-                if attackDistance < 10 then
-                    -- Tenta causar dano
-                    if npcHumanoid.Health > 0 then
-                        -- Simular ataque
-                        npcHumanoid:TakeDamage(0) -- Resetar aggro
-                        
-                        -- Procurar scripts de ataque no NPC
-                        for _, descendant in pairs(npc:GetDescendants()) do
-                            if descendant:IsA("Script") or descendant:IsA("LocalScript") then
-                                -- Tentar ativar funções de ataque
-                                pcall(function()
-                                    if descendant.Name:lower():find("attack") or 
-                                       descendant.Name:lower():find("damage") or
-                                       descendant.Name:lower():find("hit") then
-                                        descendant.Disabled = false
-                                    end
-                                end)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-    end
-end
-
--- Função para criar tag visual nos NPCs
-local function createTargetTags()
-    for _, npc in pairs(npcList) do
-        if npc and npc.Parent then
-            -- Verificar se já tem tag
-            local hasTag = false
-            for _, child in pairs(npc:GetChildren()) do
-                if child:IsA("BillboardGui") and child.Name == "TargetTag" then
-                    hasTag = true
+    -- Encontrar posição do Bond
+    local bondPosition = nil
+    local bondPart = nil
+    
+    if bond:IsA("BasePart") then
+        bondPosition = bond.Position
+        bondPart = bond
+    elseif bond:IsA("Model") then
+        local primaryPart = bond.PrimaryPart
+        if primaryPart then
+            bondPosition = primaryPart.Position
+            bondPart = primaryPart
+        else
+            -- Procurar primeira parte
+            for _, child in pairs(bond:GetChildren()) do
+                if child:IsA("BasePart") then
+                    bondPosition = child.Position
+                    bondPart = child
                     break
                 end
             end
-            
-            if not hasTag then
-                -- Criar BillboardGui
-                local billboard = Instance.new("BillboardGui")
-                billboard.Name = "TargetTag"
-                billboard.Size = UDim2.new(0, 100, 0, 30)
-                billboard.StudsOffset = Vector3.new(0, 3, 0)
-                billboard.AlwaysOnTop = true
-                
-                local textLabel = Instance.new("TextLabel")
-                textLabel.Size = UDim2.new(1, 0, 1, 0)
-                textLabel.BackgroundTransparency = 1
-                textLabel.Text = "😡 MATE ELE!"
-                textLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
-                textLabel.TextSize = 14
-                textLabel.Font = Enum.Font.GothamBold
-                textLabel.Parent = billboard
-                
-                billboard.Parent = npc
-            end
         end
     end
+    
+    if not bondPosition then
+        collectingBond = false
+        return
+    end
+    
+    -- Teleportar para o Bond
+    local teleportPosition = bondPosition + Vector3.new(0, 3, 0)
+    rootPart.CFrame = CFrame.new(teleportPosition)
+    
+    -- Tentar pegar o Bond
+    task.wait(0.5)
+    
+    -- Tentar diferentes métodos de coleta
+    if bond:IsA("Tool") then
+        -- Pegar Tool
+        humanoid:EquipTool(bond)
+    end
+    
+    if bondPart then
+        -- Tentar tocar no Bond
+        local touchPart = Instance.new("Part")
+        touchPart.Size = Vector3.new(1, 1, 1)
+        touchPart.Position = bondPosition
+        touchPart.Anchored = true
+        touchPart.CanCollide = false
+        touchPart.Transparency = 1
+        touchPart.Parent = Workspace
+        
+        -- Simular toque
+        if bondPart:FindFirstChild("TouchInterest") then
+            firetouchinterest(rootPart, bondPart, 0)
+            firetouchinterest(rootPart, bondPart, 1)
+        end
+        
+        touchPart:Destroy()
+    end
+    
+    -- Procurar por ProximityPrompt
+    local proximityPrompt = bond:FindFirstChild("ProximityPrompt")
+    if proximityPrompt then
+        proximityPrompt:InputHoldBegin()
+        task.wait(0.5)
+        proximityPrompt:InputHoldEnd()
+    end
+    
+    -- Procurar por ClickDetector
+    local clickDetector = bond:FindFirstChild("ClickDetector")
+    if clickDetector then
+        fireclickdetector(clickDetector)
+    end
+    
+    bondCount = bondCount + 1
+    BondCountLabel.Text = "Bonds Coletados: " .. bondCount
+    
+    task.wait(0.5)
+    collectingBond = false
 end
 
--- Função para ativar sistema de alvo
-local function activateTargetMode()
-    if isTargetMode then return end
+-- Função para iniciar Auto Bond
+local function startAutoBond()
+    if isAutoBondActive then return end
     
-    isTargetMode = true
-    TargetButton.Text = "😡 DESATIVAR MODO ALVO"
-    TargetButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    isAutoBondActive = true
+    StatusLabel.Text = "Status: 🟢 Ativado"
+    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
+    AutoBondButton.Text = "🎯 DESATIVAR AUTO BOND"
+    AutoBondButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     
-    -- Loop principal
-    targetConnections[#targetConnections + 1] = RunService.Heartbeat:Connect(function()
-        if isTargetMode then
-            forceNPCsToAttack()
-        end
-    end)
+    print("🎯 Auto Bond ATIVADO!")
+    print("Procurando Bonds da Bring...")
     
-    -- Atualizar tags
-    targetConnections[#targetConnections + 1] = RunService.Heartbeat:Connect(function()
-        if isTargetMode then
-            createTargetTags()
-        end
-    end)
-    
-    -- Loop para dar dano se estiver perto
-    targetConnections[#targetConnections + 1] = RunService.Heartbeat:Connect(function()
-        if isTargetMode then
-            local character = Player.Character
-            if character and character:FindFirstChild("Humanoid") then
-                local humanoid = character.Humanoid
-                local rootPart = character:FindFirstChild("HumanoidRootPart")
-                
-                if rootPart then
-                    for _, npc in pairs(npcList) do
-                        if npc and npc.Parent then
-                            local npcRoot = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
-                            if npcRoot then
-                                local distance = (rootPart.Position - npcRoot.Position).Magnitude
-                                
-                                -- Se NPC está perto, causa dano
-                                if distance < 5 then
-                                    humanoid:TakeDamage(math.random(5, 15))
-                                    
-                                    -- Efeito visual
-                                    local damageIndicator = Instance.new("Part")
-                                    damageIndicator.Size = Vector3.new(1, 1, 1)
-                                    damageIndicator.Position = rootPart.Position + Vector3.new(0, 2, 0)
-                                    damageIndicator.Anchored = true
-                                    damageIndicator.CanCollide = false
-                                    damageIndicator.Transparency = 0.5
-                                    damageIndicator.Color = Color3.fromRGB(255, 0, 0)
-                                    damageIndicator.Parent = workspace
-                                    
-                                    game:GetService("Debris"):AddItem(damageIndicator, 1)
-                                end
+    -- Loop principal de detecção
+    autoBondConnections[#autoBondConnections + 1] = RunService.Heartbeat:Connect(function()
+        if isAutoBondActive and not collectingBond then
+            local bonds = detectBond()
+            
+            if #bonds > 0 then
+                -- Encontrar Bond mais próximo
+                local character = Player.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = character.HumanoidRootPart
+                    local nearestBond = nil
+                    local nearestDistance = math.huge
+                    
+                    for _, bond in pairs(bonds) do
+                        local bondPosition = nil
+                        
+                        if bond:IsA("BasePart") then
+                            bondPosition = bond.Position
+                        elseif bond:IsA("Model") and bond.PrimaryPart then
+                            bondPosition = bond.PrimaryPart.Position
+                        end
+                        
+                        if bondPosition then
+                            local distance = (rootPart.Position - bondPosition).Magnitude
+                            if distance < nearestDistance then
+                                nearestDistance = distance
+                                nearestBond = bond
                             end
                         end
                     end
+                    
+                    if nearestBond then
+                        print("💵 Bond encontrado! Coletando...")
+                        bondDetected = nearestBond
+                        collectBond(nearestBond)
+                    end
+                end
+            end
+        end
+    end)
+    
+    -- Monitorar novos Bonds que aparecem
+    autoBondConnections[#autoBondConnections + 1] = Workspace.DescendantAdded:Connect(function(descendant)
+        if isAutoBondActive then
+            local name = descendant.Name:lower()
+            if name:find("bond") or name:find("bring") or name:find("dinheiro") or name:find("money") then
+                print("💵 Novo Bond detectado!")
+                task.wait(0.5)
+                if isAutoBondActive and not collectingBond then
+                    collectBond(descendant)
                 end
             end
         end
     end)
 end
 
--- Função para desativar sistema de alvo
-local function deactivateTargetMode()
-    if not isTargetMode then return end
+-- Função para parar Auto Bond
+local function stopAutoBond()
+    if not isAutoBondActive then return end
     
-    isTargetMode = false
-    TargetButton.Text = "😡 ATIVAR MODO ALVO"
-    TargetButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    isAutoBondActive = false
+    StatusLabel.Text = "Status: 🔴 Desativado"
+    StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    AutoBondButton.Text = "🎯 ATIVAR AUTO BOND"
+    AutoBondButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+    
+    print("🎯 Auto Bond DESATIVADO!")
+    print("Total de Bonds coletados: " .. bondCount)
     
     -- Desconectar loops
-    for _, conn in pairs(targetConnections) do
+    for _, conn in pairs(autoBondConnections) do
         conn:Disconnect()
     end
-    targetConnections = {}
-    
-    -- Remover tags
-    for _, npc in pairs(npcList) do
-        if npc and npc.Parent then
-            local tag = npc:FindFirstChild("TargetTag")
-            if tag then
-                tag:Destroy()
-            end
-        end
-    end
-    
-    -- Restaurar velocidade dos NPCs
-    for _, npc in pairs(npcList) do
-        if npc and npc.Parent then
-            local humanoid = npc:FindFirstChild("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = 16
-                humanoid.JumpPower = 50
-            end
-        end
-    end
+    autoBondConnections = {}
 end
 
--- Toggle Sistema de Alvo
-TargetButton.MouseButton1Click:Connect(function()
-    if isTargetMode then
-        deactivateTargetMode()
+-- Toggle Auto Bond
+AutoBondButton.MouseButton1Click:Connect(function()
+    if isAutoBondActive then
+        stopAutoBond()
     else
-        activateTargetMode()
+        startAutoBond()
     end
 end)
 
@@ -321,12 +378,16 @@ end)
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
         MainFrame.Size = originalSize
-        TargetButton.Visible = true
+        StatusLabel.Visible = true
+        BondCountLabel.Visible = true
+        AutoBondButton.Visible = true
         MinimizeButton.Text = "—"
         isMinimized = false
     else
         MainFrame.Size = UDim2.new(0, 250, 0, 35)
-        TargetButton.Visible = false
+        StatusLabel.Visible = false
+        BondCountLabel.Visible = false
+        AutoBondButton.Visible = false
         MinimizeButton.Text = "+"
         isMinimized = true
     end
@@ -334,8 +395,17 @@ end)
 
 -- Limpar quando destruir
 ScreenGui.Destroying:Connect(function()
-    deactivateTargetMode()
+    stopAutoBond()
 end)
 
-print("⚡ NoobHub - Sistema de Alvo carregado!")
-print("😡 Todos NPCs vão te atacar!")
+-- Reconectar quando morrer
+Player.CharacterAdded:Connect(function(character)
+    if isAutoBondActive then
+        task.wait(2)
+        print("🎯 Personagem renasceu, continuando Auto Bond...")
+    end
+end)
+
+print("⚡ NoobHub - Auto Bond para Dead Rails carregado!")
+print("🎯 Sistema de coleta automática de Bonds da Bring pronto!")
+print("💵 Ative o Auto Bond para começar a coletar!")
