@@ -1,14 +1,14 @@
 --[[
     NoobHub - Auto Bond para Dead Rails
-    Clica no botão de pegar em todos Bonds
-    Mostra quantidade de Bonds no mapa em tempo real
+    Solução Corrigida: Teleporta e pega Bonds
+    GUI centralizada na tela
 ]]
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local VirtualInputManager = game:GetService("VirtualInputManager")
+local TweenService = game:GetService("TweenService")
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -16,11 +16,11 @@ ScreenGui.Name = "NoobHub"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
--- Criar Frame principal
+-- Criar Frame principal (CENTRALIZADO)
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 250, 0, 180)
-MainFrame.Position = UDim2.new(0.5, -125, 0.1, -90)
+MainFrame.Size = UDim2.new(0, 300, 0, 200)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -100) -- CENTRO DA TELA
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -72,7 +72,7 @@ MinCorner.Parent = MinimizeButton
 -- Status Label
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.28, 0)
+StatusLabel.Position = UDim2.new(0.05, 0, 0.25, 0)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "Status: 🔴 Desativado"
 StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
@@ -84,7 +84,7 @@ StatusLabel.Parent = MainFrame
 -- Label de Bonds no mapa
 local BondsOnMapLabel = Instance.new("TextLabel")
 BondsOnMapLabel.Size = UDim2.new(0.9, 0, 0, 25)
-BondsOnMapLabel.Position = UDim2.new(0.05, 0, 0.45, 0)
+BondsOnMapLabel.Position = UDim2.new(0.05, 0, 0.4, 0)
 BondsOnMapLabel.BackgroundTransparency = 1
 BondsOnMapLabel.Text = "💵 Bonds no Mapa: 0"
 BondsOnMapLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
@@ -96,7 +96,7 @@ BondsOnMapLabel.Parent = MainFrame
 -- Label de Bonds coletados
 local BondsCollectedLabel = Instance.new("TextLabel")
 BondsCollectedLabel.Size = UDim2.new(0.9, 0, 0, 25)
-BondsCollectedLabel.Position = UDim2.new(0.05, 0, 0.62, 0)
+BondsCollectedLabel.Position = UDim2.new(0.05, 0, 0.55, 0)
 BondsCollectedLabel.BackgroundTransparency = 1
 BondsCollectedLabel.Text = "✅ Bonds Coletados: 0"
 BondsCollectedLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
@@ -108,10 +108,10 @@ BondsCollectedLabel.Parent = MainFrame
 -- Botão Auto Bond
 local AutoBondButton = Instance.new("TextButton")
 AutoBondButton.Size = UDim2.new(0.9, 0, 0, 35)
-AutoBondButton.Position = UDim2.new(0.05, 0, 0.78, 0)
+AutoBondButton.Position = UDim2.new(0.05, 0, 0.72, 0)
 AutoBondButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
 AutoBondButton.BorderSizePixel = 0
-AutoBondButton.Text = "🎯 ATIVAR AUTO CLICK"
+AutoBondButton.Text = "🎯 ATIVAR AUTO BOND"
 AutoBondButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 AutoBondButton.TextSize = 12
 AutoBondButton.Font = Enum.Font.GothamBold
@@ -122,118 +122,75 @@ AutoBondCorner.CornerRadius = UDim.new(0, 5)
 AutoBondCorner.Parent = AutoBondButton
 
 -- Variáveis
-local isAutoClickActive = false
+local isAutoBondActive = false
 local isMinimized = false
 local originalSize = MainFrame.Size
 local bondsCollected = 0
-local autoClickConnections = {}
-local processedBonds = {} -- Lista de Bonds já clicados
+local autoBondConnections = {}
+local processedBonds = {}
 
--- Função para detectar todos Bonds no mapa
-local function detectAllBonds()
-    local bondButtons = {}
+-- Função para detectar Bonds (mais abrangente)
+local function detectBonds()
+    local bonds = {}
     
-    -- Procurar por ProximityPrompts que são botões de Bond
+    -- Procurar em todo workspace
     for _, obj in pairs(Workspace:GetDescendants()) do
+        local isValid = false
+        local objName = obj.Name:lower()
+        local parentName = obj.Parent and obj.Parent.Name:lower() or ""
+        
+        -- Verificar por múltiplos critérios
         if obj:IsA("ProximityPrompt") then
-            local parent = obj.Parent
-            if parent then
-                local parentName = parent.Name:lower()
-                local promptName = obj.Name:lower()
-                
-                if parentName:find("bond") or 
-                   parentName:find("bring") or 
-                   parentName:find("dinheiro") or 
-                   parentName:find("money") or
-                   parentName:find("cash") or
-                   parentName:find("dollar") or
-                   parentName:find("nota") or
-                   parentName:find("cedula") or
-                   parentName:find("real") or
-                   parentName:find("reais") or
-                   promptName:find("bond") or
-                   promptName:find("bring") or
-                   promptName:find("pegar") or
-                   promptName:find("coletar") or
-                   promptName:find("collect") then
-                    
-                    -- Verificar se não foi processado
-                    if not processedBonds[obj] then
-                        table.insert(bondButtons, {
-                            prompt = obj,
-                            parent = parent
-                        })
-                    end
-                end
-            end
+            isValid = true
+        elseif obj:IsA("ClickDetector") then
+            isValid = true
+        elseif obj:IsA("Tool") then
+            isValid = true
+        elseif obj:IsA("BasePart") and (
+            objName:find("bond") or
+            objName:find("bring") or
+            objName:find("money") or
+            objName:find("cash") or
+            objName:find("nota") or
+            objName:find("cedula") or
+            objName:find("coin") or
+            objName:find("bill")
+        ) then
+            isValid = true
         end
         
-        -- Procurar por ClickDetectors
-        if obj:IsA("ClickDetector") then
-            local parent = obj.Parent
-            if parent then
-                local parentName = parent.Name:lower()
-                
-                if parentName:find("bond") or 
-                   parentName:find("bring") or 
-                   parentName:find("dinheiro") or 
-                   parentName:find("money") or
-                   parentName:find("cash") or
-                   parentName:find("dollar") then
-                    
-                    if not processedBonds[obj] then
-                        table.insert(bondButtons, {
-                            prompt = nil,
-                            clickDetector = obj,
-                            parent = parent
-                        })
-                    end
-                end
+        -- Verificar por nomes específicos
+        if objName:find("bond") or 
+           objName:find("bring") or 
+           objName:find("dinheiro") or 
+           objName:find("money") or
+           objName:find("cash") or
+           objName:find("dollar") or
+           objName:find("nota") or
+           objName:find("cedula") or
+           objName:find("coin") or
+           objName:find("bill") or
+           parentName:find("bond") or
+           parentName:find("bring") or
+           parentName:find("money") then
+            isValid = true
+        end
+        
+        if isValid and obj ~= Player.Character then
+            -- Verificar se não foi processado
+            local key = tostring(obj)
+            if not processedBonds[key] then
+                table.insert(bonds, obj)
             end
         end
     end
     
-    return bondButtons
+    return bonds
 end
 
--- Função para contar Bonds no mapa
-local function countBondsOnMap()
-    local count = 0
-    
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
-            local parent = obj.Parent
-            if parent then
-                local parentName = parent.Name:lower()
-                local objName = obj.Name:lower()
-                
-                if parentName:find("bond") or 
-                   parentName:find("bring") or 
-                   parentName:find("dinheiro") or 
-                   parentName:find("money") or
-                   parentName:find("cash") or
-                   parentName:find("dollar") or
-                   parentName:find("nota") or
-                   parentName:find("cedula") or
-                   parentName:find("real") or
-                   parentName:find("reais") or
-                   objName:find("bond") or
-                   objName:find("bring") or
-                   objName:find("pegar") or
-                   objName:find("coletar") or
-                   objName:find("collect") then
-                    count = count + 1
-                end
-            end
-        end
-    end
-    
-    return count
-end
-
--- Função para clicar no botão de pegar
-local function clickBondButton(bondData)
-    if not isAutoClickActive then return end
+-- Função para pegar Bond (solução corrigida)
+local function collectBond(bond)
+    if not isAutoBondActive then return end
     
     local character = Player.Character
     if not character or not character:FindFirstChild("HumanoidRootPart") then
@@ -245,186 +202,194 @@ local function clickBondButton(bondData)
     
     -- Encontrar posição do Bond
     local bondPosition = nil
+    local bondCFrame = nil
     
-    if bondData.parent:IsA("BasePart") then
-        bondPosition = bondData.parent.Position
-    elseif bondData.parent:IsA("Model") then
-        local primaryPart = bondData.parent.PrimaryPart
-        if primaryPart then
-            bondPosition = primaryPart.Position
+    if bond:IsA("BasePart") then
+        bondPosition = bond.Position
+        bondCFrame = bond.CFrame
+    elseif bond:IsA("Model") then
+        if bond.PrimaryPart then
+            bondPosition = bond.PrimaryPart.Position
+            bondCFrame = bond.PrimaryPart.CFrame
         else
-            for _, child in pairs(bondData.parent:GetChildren()) do
+            for _, child in pairs(bond:GetChildren()) do
                 if child:IsA("BasePart") then
                     bondPosition = child.Position
+                    bondCFrame = child.CFrame
                     break
                 end
             end
+        end
+    elseif bond.Parent then
+        if bond.Parent:IsA("BasePart") then
+            bondPosition = bond.Parent.Position
+            bondCFrame = bond.Parent.CFrame
+        elseif bond.Parent:IsA("Model") and bond.Parent.PrimaryPart then
+            bondPosition = bond.Parent.PrimaryPart.Position
+            bondCFrame = bond.Parent.PrimaryPart.CFrame
         end
     end
     
     if not bondPosition then return end
     
-    -- Teleportar para perto do Bond (mas mantendo distância para o prompt aparecer)
-    local teleportPosition = bondPosition + Vector3.new(0, 2, 5)
-    rootPart.CFrame = CFrame.new(teleportPosition, bondPosition)
-    
+    -- TELEPORTAR EXATAMENTE EM CIMA DO BOND
+    rootPart.CFrame = CFrame.new(bondPosition + Vector3.new(0, 2, 0))
     task.wait(0.3)
     
-    -- Tentar ativar ProximityPrompt
-    if bondData.prompt then
-        pcall(function()
-            -- Simular segurar o prompt
-            bondData.prompt:InputHoldBegin()
-            task.wait(0.5)
-            bondData.prompt:InputHoldEnd()
-            
-            -- Tentar trigger direto
-            fireproximityprompt(bondData.prompt)
-        end)
-    end
-    
-    -- Tentar clicar no ClickDetector
-    if bondData.clickDetector then
-        pcall(function()
-            fireclickdetector(bondData.clickDetector)
-        end)
-    end
-    
-    -- Tentar clicar com o mouse
-    if bondData.parent:IsA("BasePart") then
-        -- Posicionar câmera no Bond
-        local camera = Workspace.CurrentCamera
-        if camera then
-            camera.CFrame = CFrame.new(teleportPosition, bondPosition)
+    -- Método 1: Tocar no Bond
+    if bond:IsA("BasePart") then
+        if bond:FindFirstChild("TouchInterest") then
+            firetouchinterest(rootPart, bond, 0)
+            firetouchinterest(rootPart, bond, 1)
         end
-        
-        -- Simular clique
-        VirtualInputManager:SendMouseButtonEvent(
-            0,
-            0,
-            0,
-            true,
-            game:GetService("UserInputService"):GetMouseLocation(),
-            0
-        )
-        
-        task.wait(0.1)
-        
-        VirtualInputManager:SendMouseButtonEvent(
-            0,
-            0,
-            0,
-            false,
-            game:GetService("UserInputService"):GetMouseLocation(),
-            0
-        )
+        -- Tentar tocar em partes do parent
+        if bond.Parent and bond.Parent:IsA("Model") then
+            for _, part in pairs(bond.Parent:GetChildren()) do
+                if part:IsA("BasePart") and part:FindFirstChild("TouchInterest") then
+                    firetouchinterest(rootPart, part, 0)
+                    firetouchinterest(rootPart, part, 1)
+                end
+            end
+        end
+    end
+    
+    -- Método 2: Procurar e ativar ProximityPrompt
+    local prompts = {}
+    if bond:IsA("ProximityPrompt") then
+        table.insert(prompts, bond)
+    end
+    
+    -- Procurar prompts no bond e nos filhos
+    local targetObject = bond
+    if bond.Parent and bond.Parent:IsA("Model") then
+        targetObject = bond.Parent
+    end
+    
+    for _, child in pairs(targetObject:GetDescendants()) do
+        if child:IsA("ProximityPrompt") then
+            table.insert(prompts, child)
+        end
+    end
+    
+    -- Ativar todos os prompts encontrados
+    for _, prompt in pairs(prompts) do
+        pcall(function()
+            prompt:InputHoldBegin()
+            task.wait(0.3)
+            prompt:InputHoldEnd()
+            fireproximityprompt(prompt)
+        end)
+    end
+    
+    -- Método 3: Clicar em ClickDetectors
+    local detectors = {}
+    if bond:IsA("ClickDetector") then
+        table.insert(detectors, bond)
+    end
+    
+    for _, child in pairs(targetObject:GetDescendants()) do
+        if child:IsA("ClickDetector") then
+            table.insert(detectors, child)
+        end
+    end
+    
+    for _, detector in pairs(detectors) do
+        pcall(function()
+            fireclickdetector(detector)
+        end)
+    end
+    
+    -- Método 4: Tentar equipar se for Tool
+    if bond:IsA("Tool") then
+        pcall(function()
+            humanoid:EquipTool(bond)
+            task.wait(0.5)
+            humanoid:UnequipTools()
+        end)
     end
     
     -- Marcar como processado
-    processedBonds[bondData.prompt or bondData.clickDetector or bondData.parent] = true
-    
+    processedBonds[tostring(bond)] = true
     bondsCollected = bondsCollected + 1
     BondsCollectedLabel.Text = "✅ Bonds Coletados: " .. bondsCollected
     
-    print("💵 Bond coletado! Total: " .. bondsCollected)
+    print("💵 Bond coletado com sucesso! Total: " .. bondsCollected)
     
     task.wait(0.5)
 end
 
--- Função para iniciar Auto Click
-local function startAutoClick()
-    if isAutoClickActive then return end
+-- Função para contar Bonds no mapa
+local function countBondsOnMap()
+    local bonds = detectBonds()
+    return #bonds
+end
+
+-- Função para iniciar Auto Bond
+local function startAutoBond()
+    if isAutoBondActive then return end
     
-    isAutoClickActive = true
+    isAutoBondActive = true
     StatusLabel.Text = "Status: 🟢 Ativado"
     StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    AutoBondButton.Text = "🎯 DESATIVAR AUTO CLICK"
+    AutoBondButton.Text = "🎯 DESATIVAR AUTO BOND"
     AutoBondButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     
-    print("🎯 Auto Click ATIVADO!")
-    print("💰 Clicando em todos Bonds automaticamente...")
+    print("🎯 Auto Bond ATIVADO!")
+    print("💵 Teleportando e pegando Bonds...")
     
-    -- Loop principal para atualizar contagem e clicar
-    autoClickConnections[#autoClickConnections + 1] = RunService.Heartbeat:Connect(function()
-        if isAutoClickActive then
-            -- Atualizar contagem de Bonds no mapa
+    -- Loop principal
+    autoBondConnections[#autoBondConnections + 1] = RunService.Heartbeat:Connect(function()
+        if isAutoBondActive then
+            -- Atualizar contagem
             local bondCount = countBondsOnMap()
             BondsOnMapLabel.Text = "💵 Bonds no Mapa: " .. bondCount
             
-            -- Detectar e clicar em Bonds
-            local bonds = detectAllBonds()
-            
-            for _, bondData in pairs(bonds) do
-                if isAutoClickActive then
-                    clickBondButton(bondData)
+            -- Pegar Bonds
+            local bonds = detectBonds()
+            for _, bond in pairs(bonds) do
+                if isAutoBondActive then
+                    collectBond(bond)
                 end
             end
         end
     end)
     
     -- Monitorar novos Bonds
-    autoClickConnections[#autoClickConnections + 1] = Workspace.DescendantAdded:Connect(function(descendant)
-        if isAutoClickActive then
-            if descendant:IsA("ProximityPrompt") or descendant:IsA("ClickDetector") then
-                local parent = descendant.Parent
-                if parent then
-                    local parentName = parent.Name:lower()
-                    local descName = descendant.Name:lower()
-                    
-                    if parentName:find("bond") or 
-                       parentName:find("bring") or 
-                       parentName:find("dinheiro") or 
-                       parentName:find("money") or
-                       parentName:find("cash") or
-                       descName:find("bond") or
-                       descName:find("bring") or
-                       descName:find("pegar") or
-                       descName:find("coletar") then
-                        
-                        print("💵 Novo Bond detectado!")
-                        task.wait(0.5)
-                        
-                        if isAutoClickActive then
-                            local bondData = {
-                                prompt = descendant:IsA("ProximityPrompt") and descendant or nil,
-                                clickDetector = descendant:IsA("ClickDetector") and descendant or nil,
-                                parent = parent
-                            }
-                            clickBondButton(bondData)
-                        end
-                    end
-                end
+    autoBondConnections[#autoBondConnections + 1] = Workspace.DescendantAdded:Connect(function(descendant)
+        if isAutoBondActive then
+            task.wait(0.5)
+            if isAutoBondActive then
+                collectBond(descendant)
             end
         end
     end)
 end
 
--- Função para parar Auto Click
-local function stopAutoClick()
-    if not isAutoClickActive then return end
+-- Função para parar Auto Bond
+local function stopAutoBond()
+    if not isAutoBondActive then return end
     
-    isAutoClickActive = false
+    isAutoBondActive = false
     StatusLabel.Text = "Status: 🔴 Desativado"
     StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    AutoBondButton.Text = "🎯 ATIVAR AUTO CLICK"
+    AutoBondButton.Text = "🎯 ATIVAR AUTO BOND"
     AutoBondButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
     
-    print("🎯 Auto Click DESATIVADO!")
+    print("🎯 Auto Bond DESATIVADO!")
     print("✅ Total de Bonds coletados: " .. bondsCollected)
     
-    -- Desconectar loops
-    for _, conn in pairs(autoClickConnections) do
+    for _, conn in pairs(autoBondConnections) do
         conn:Disconnect()
     end
-    autoClickConnections = {}
+    autoBondConnections = {}
 end
 
--- Toggle Auto Click
+-- Toggle Auto Bond
 AutoBondButton.MouseButton1Click:Connect(function()
-    if isAutoClickActive then
-        stopAutoClick()
+    if isAutoBondActive then
+        stopAutoBond()
     else
-        startAutoClick()
+        startAutoBond()
     end
 end)
 
@@ -439,7 +404,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
         MinimizeButton.Text = "—"
         isMinimized = false
     else
-        MainFrame.Size = UDim2.new(0, 250, 0, 35)
+        MainFrame.Size = UDim2.new(0, 300, 0, 35)
         StatusLabel.Visible = false
         BondsOnMapLabel.Visible = false
         BondsCollectedLabel.Visible = false
@@ -451,17 +416,17 @@ end)
 
 -- Limpar quando destruir
 ScreenGui.Destroying:Connect(function()
-    stopAutoClick()
+    stopAutoBond()
 end)
 
 -- Reconectar quando morrer
 Player.CharacterAdded:Connect(function(character)
-    if isAutoClickActive then
+    if isAutoBondActive then
         task.wait(2)
-        print("🎯 Personagem renasceu, continuando Auto Click...")
-        processedBonds = {} -- Resetar Bonds processados
+        print("🎯 Personagem renasceu, continuando Auto Bond...")
+        processedBonds = {}
     end
 end)
 
-print("⚡ NoobHub - Auto Click para Bonds carregado!")
-print("🎯 Sistema de clique automático nos Bonds pronto!")
+print("⚡ NoobHub - Auto Bond Corrigido carregado!")
+print("🎯 Teleporta e pega Bonds automaticamente!")
