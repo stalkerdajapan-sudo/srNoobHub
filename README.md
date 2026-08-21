@@ -1,532 +1,206 @@
 --[[
-    NoobHub - Tools Malucos
-    20+ Tools com GUI arrastável
+    NoobVisivel - Sistema de invisibilidade para jogadores
+    Versão: 1.0
+    Autor: Script Editado
 ]]
 
-local Players = game:GetService("Players")
-local Player = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
+-- Limpeza de conexões anteriores
+if _G.NoobVisivel then
+    for _, conexao in pairs(_G.NoobVisivel) do
+        conexao:Disconnect()
+    end
+    _G.NoobVisivel = nil
+end
 
--- Criar ScreenGui
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NoobHub"
-ScreenGui.Parent = Player:WaitForChild("PlayerGui")
-ScreenGui.ResetOnSpawn = false
+-- Variáveis globais
+local jogador = game.Players.LocalPlayer
+local personagem = nil
+local humanoide = nil
+local torso = nil
+local partes = {}
+local ativo = false
+local janela = nil
+local botao = nil
+local arrastando = false
+local posInicialDrag = nil
+local posJanelaDrag = nil
 
--- Criar Frame principal
-local MainFrame = Instance.new("Frame")
-MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 300, 0, 400)
-MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Parent = ScreenGui
-
-local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 10)
-MainCorner.Parent = MainFrame
-
--- Barra de título
-local TitleBar = Instance.new("Frame")
-TitleBar.Size = UDim2.new(1, 0, 0, 35)
-TitleBar.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
-TitleBar.BorderSizePixel = 0
-TitleBar.Parent = MainFrame
-
-local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 10)
-TitleCorner.Parent = TitleBar
-
-local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(0.7, 0, 1, 0)
-Title.Position = UDim2.new(0.05, 0, 0, 0)
-Title.BackgroundTransparency = 1
-Title.Text = "⚡ NoobHub Tools"
-Title.TextColor3 = Color3.fromRGB(20, 20, 20)
-Title.TextSize = 16
-Title.Font = Enum.Font.GothamBlack
-Title.TextXAlignment = Enum.TextXAlignment.Left
-Title.Parent = TitleBar
-
--- Botão minimizar
-local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
-MinimizeButton.Position = UDim2.new(0.87, 0, 0.13, 0)
-MinimizeButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Text = "—"
-MinimizeButton.TextColor3 = Color3.fromRGB(255, 180, 0)
-MinimizeButton.TextSize = 16
-MinimizeButton.Font = Enum.Font.GothamBold
-MinimizeButton.Parent = TitleBar
-
-local MinCorner = Instance.new("UICorner")
-MinCorner.CornerRadius = UDim.new(0, 5)
-MinCorner.Parent = MinimizeButton
-
--- Container com scroll
-local ContentContainer = Instance.new("ScrollingFrame")
-ContentContainer.Size = UDim2.new(1, -10, 1, -40)
-ContentContainer.Position = UDim2.new(0, 5, 0, 40)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.BorderSizePixel = 0
-ContentContainer.ScrollBarThickness = 4
-ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(255, 180, 0)
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 1200)
-ContentContainer.Parent = MainFrame
-
--- Variáveis
-local isMinimized = false
-local originalSize = MainFrame.Size
-local flyBody = nil
-local flyGyro = nil
-local isFlying = false
-local isNoclipping = false
-local noclipConnection = nil
-local speedLoop = nil
-
--- Função para criar botão
-local function createButton(name, yPos, callback, color)
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, -10, 0, 35)
-    Button.Position = UDim2.new(0, 5, 0, yPos)
-    Button.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
-    Button.BorderSizePixel = 0
-    Button.Text = name
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.TextSize = 12
-    Button.Font = Enum.Font.GothamBold
-    Button.AutoButtonColor = true
-    Button.Parent = ContentContainer
+-- Função para coletar partes do personagem
+local function coletarPartes()
+    personagem = jogador.Character or jogador.CharacterAdded:Wait()
+    humanoide = personagem:WaitForChild("Humanoid")
+    torso = personagem:WaitForChild("HumanoidRootPart")
+    partes = {}
     
-    local ButtonCorner = Instance.new("UICorner")
-    ButtonCorner.CornerRadius = UDim.new(0, 5)
-    ButtonCorner.Parent = Button
+    for _, parte in pairs(personagem:GetDescendants()) do
+        if parte:IsA("BasePart") and parte.Transparency == 0 then
+            table.insert(partes, parte)
+        end
+    end
+end
+
+-- Função para alternar visibilidade
+local function alternarVisibilidade()
+    ativo = not ativo
     
-    Button.MouseButton1Click:Connect(callback)
-    return Button
+    for _, parte in pairs(partes) do
+        parte.Transparency = parte.Transparency == 0 and 0.5 or 0
+    end
+    
+    -- Atualizar texto do botão
+    if botao then
+        botao.Text = ativo and "NoobVisivel: ON" or "NoobVisivel: OFF"
+    end
 end
 
--- Função para criar separador
-local function createSeparator(yPos)
-    local Separator = Instance.new("Frame")
-    Separator.Size = UDim2.new(1, -10, 0, 2)
-    Separator.Position = UDim2.new(0, 5, 0, yPos)
-    Separator.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
-    Separator.BorderSizePixel = 0
-    Separator.Parent = ContentContainer
-end
-
--- Função para criar label de seção
-local function createSection(text, yPos)
-    local Label = Instance.new("TextLabel")
-    Label.Size = UDim2.new(1, -10, 0, 20)
-    Label.Position = UDim2.new(0, 5, 0, yPos)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(255, 180, 0)
-    Label.TextSize = 14
-    Label.Font = Enum.Font.GothamBlack
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    Label.Parent = ContentContainer
-end
-
--- Função para pegar personagem
-local function getCharacter()
-    return Player.Character
-end
-
--- Função para pegar root
-local function getRoot()
-    local char = getCharacter()
-    return char and char:FindFirstChild("HumanoidRootPart")
-end
-
--- Função para pegar humanoid
-local function getHumanoid()
-    local char = getCharacter()
-    return char and char:FindFirstChild("Humanoid")
-end
-
--- Criar as Tools
-createSection("🏃 Movimento", 5)
-
--- 1. Speed
-createButton("⚡ Speed (100)", 30, function()
-    local hum = getHumanoid()
-    if hum then
-        hum.WalkSpeed = 100
-        task.wait(10)
-        hum.WalkSpeed = 16
-    end
-end, Color3.fromRGB(50, 100, 200))
-
--- 2. Super Jump
-createButton("🦘 Super Jump", 70, function()
-    local hum = getHumanoid()
-    if hum then
-        hum.JumpPower = 150
-        task.wait(10)
-        hum.JumpPower = 50
-    end
-end, Color3.fromRGB(50, 100, 200))
-
--- 3. Fly
-createButton("🚀 Fly", 110, function()
-    local root = getRoot()
-    local hum = getHumanoid()
-    if root and hum then
-        if not isFlying then
-            isFlying = true
-            flyBody = Instance.new("BodyVelocity")
-            flyBody.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-            flyBody.Velocity = Vector3.new(0, 0, 0)
-            flyBody.Parent = root
-            
-            flyGyro = Instance.new("BodyGyro")
-            flyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-            flyGyro.CFrame = root.CFrame
-            flyGyro.Parent = root
-            
-            hum.PlatformStand = true
-            
-            local connection
-            connection = RunService.Heartbeat:Connect(function()
-                if not isFlying or not root or not flyBody then
-                    connection:Disconnect()
-                    return
-                end
-                
-                local direction = Vector3.new(0, 0, 0)
-                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
-                    direction = direction + root.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
-                    direction = direction - root.CFrame.LookVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
-                    direction = direction - root.CFrame.RightVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
-                    direction = direction + root.CFrame.RightVector
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-                    direction = direction + Vector3.new(0, 1, 0)
-                end
-                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-                    direction = direction - Vector3.new(0, 1, 0)
-                end
-                
-                flyBody.Velocity = direction * 50
-            end)
-        else
-            isFlying = false
-            if flyBody then flyBody:Destroy() end
-            if flyGyro then flyGyro:Destroy() end
-            hum.PlatformStand = false
+-- Criar interface gráfica
+local function criarInterface()
+    -- Criar ScreenGui
+    local tela = Instance.new("ScreenGui")
+    tela.Name = "NoobVisivelGUI"
+    tela.Parent = jogador:WaitForChild("PlayerGui")
+    
+    -- Criar frame principal (janela)
+    janela = Instance.new("Frame")
+    janela.Name = "JanelaPrincipal"
+    janela.Size = UDim2.new(0, 200, 0, 80)
+    janela.Position = UDim2.new(0.5, -100, 0.5, -40)
+    janela.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    janela.BackgroundTransparency = 0.1
+    janela.BorderSizePixel = 2
+    janela.BorderColor3 = Color3.fromRGB(255, 0, 200)
+    janela.ClipsDescendants = true
+    janela.Parent = tela
+    
+    -- Adicionar cantos arredondados
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = janela
+    
+    -- Barra de título (para drag)
+    local barraTitulo = Instance.new("Frame")
+    barraTitulo.Name = "BarraTitulo"
+    barraTitulo.Size = UDim2.new(1, 0, 0, 25)
+    barraTitulo.BackgroundColor3 = Color3.fromRGB(255, 0, 200)
+    barraTitulo.BackgroundTransparency = 0.3
+    barraTitulo.Parent = janela
+    
+    -- Título da janela
+    local titulo = Instance.new("TextLabel")
+    titulo.Name = "Titulo"
+    titulo.Size = UDim2.new(1, 0, 1, 0)
+    titulo.BackgroundTransparency = 1
+    titulo.Text = "NoobVisivel v1.0"
+    titulo.TextColor3 = Color3.fromRGB(255, 255, 255)
+    titulo.TextSize = 14
+    titulo.TextXAlignment = Enum.TextXAlignment.Left
+    titulo.TextYAlignment = Enum.TextYAlignment.Center
+    titulo.Parent = barraTitulo
+    
+    -- Texto de status
+    local statusLabel = Instance.new("TextLabel")
+    statusLabel.Name = "Status"
+    statusLabel.Size = UDim2.new(0.8, 0, 0, 30)
+    statusLabel.Position = UDim2.new(0.1, 0, 0.4, 0)
+    statusLabel.BackgroundTransparency = 1
+    statusLabel.Text = "Clique no botão para ativar"
+    statusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    statusLabel.TextSize = 12
+    statusLabel.TextWrapped = true
+    statusLabel.Parent = janela
+    
+    -- Botão de alternância
+    botao = Instance.new("TextButton")
+    botao.Name = "BotaoAlternar"
+    botao.Size = UDim2.new(0.8, 0, 0, 30)
+    botao.Position = UDim2.new(0.1, 0, 0.7, -15)
+    botao.Text = "NoobVisivel: OFF"
+    botao.TextColor3 = Color3.fromRGB(255, 255, 255)
+    botao.TextSize = 14
+    botao.BackgroundColor3 = Color3.fromRGB(255, 0, 200)
+    botao.BackgroundTransparency = 0.2
+    botao.BorderSizePixel = 0
+    botao.Parent = janela
+    
+    -- Cantos arredondados no botão
+    local botaoCorner = Instance.new("UICorner")
+    botaoCorner.CornerRadius = UDim.new(0, 5)
+    botaoCorner.Parent = botao
+    
+    -- Sistema de drag (arrastar janela)
+    barraTitulo.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            arrastando = true
+            posInicialDrag = input.Position
+            posJanelaDrag = janela.Position
         end
-    end
-end, Color3.fromRGB(50, 100, 200))
-
--- 4. Noclip
-createButton("👻 Noclip", 150, function()
-    if not isNoclipping then
-        isNoclipping = true
-        noclipConnection = RunService.Stepped:Connect(function()
-            local char = getCharacter()
-            if char then
-                for _, part in pairs(char:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
-                end
-            end
-        end)
-    else
-        isNoclipping = false
-        if noclipConnection then
-            noclipConnection:Disconnect()
-        end
-        local char = getCharacter()
-        if char then
-            for _, part in pairs(char:GetDescendants()) do
-                if part:IsA("BasePart") then
-                    part.CanCollide = true
-                end
-            end
-        end
-    end
-end, Color3.fromRGB(50, 100, 200))
-
-createSeparator(195)
-
-createSection("💪 Poder", 200)
-
--- 5. God Mode
-createButton("🛡️ God Mode", 225, function()
-    local hum = getHumanoid()
-    if hum then
-        hum.MaxHealth = math.huge
-        hum.Health = math.huge
-    end
-end, Color3.fromRGB(200, 150, 0))
-
--- 6. Força
-createButton("💥 Força Bruta", 265, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Massless = false
-                part.Material = Enum.Material.DiamondPlate
-            end
-        end
-    end
-end, Color3.fromRGB(200, 150, 0))
-
--- 7. Invisível
-createButton("👁️ Invisível", 305, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Transparency = 1
-            end
-        end
-    end
-end, Color3.fromRGB(200, 150, 0))
-
--- 8. Gigante
-createButton("🎈 Gigante", 345, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Size = part.Size * 2
-            end
-        end
-    end
-end, Color3.fromRGB(200, 150, 0))
-
--- 9. Pequeno
-createButton("🐜 Pequeno", 385, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Size = part.Size * 0.5
-            end
-        end
-    end
-end, Color3.fromRGB(200, 150, 0))
-
-createSeparator(430)
-
-createSection("🎯 Ataque", 435)
-
--- 10. Explosão
-createButton("💣 Explosão", 460, function()
-    local root = getRoot()
-    if root then
-        local explosion = Instance.new("Explosion")
-        explosion.Position = root.Position
-        explosion.BlastRadius = 50
-        explosion.DestroyJointRadiusPercent = 0
-        explosion.Parent = Workspace
-    end
-end, Color3.fromRGB(200, 50, 50))
-
--- 11. Raio Laser
-createButton("🔫 Raio Laser", 500, function()
-    local root = getRoot()
-    if root then
-        local beam = Instance.new("Beam")
-        beam.Name = "LaserBeam"
-        
-        local startPart = Instance.new("Part")
-        startPart.Size = Vector3.new(1, 1, 1)
-        startPart.Position = root.Position
-        startPart.Anchored = true
-        startPart.CanCollide = false
-        startPart.Transparency = 1
-        startPart.Parent = Workspace
-        
-        local endPart = Instance.new("Part")
-        endPart.Size = Vector3.new(1, 1, 1)
-        endPart.Position = root.Position + root.CFrame.LookVector * 50
-        endPart.Anchored = true
-        endPart.CanCollide = false
-        endPart.Transparency = 1
-        endPart.Parent = Workspace
-        
-        beam.Attachment0 = Instance.new("Attachment", startPart)
-        beam.Attachment1 = Instance.new("Attachment", endPart)
-        beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
-        beam.Width0 = 0.5
-        beam.Width1 = 0.5
-        beam.Parent = Workspace
-        
-        game:GetService("Debris"):AddItem(startPart, 3)
-        game:GetService("Debris"):AddItem(endPart, 3)
-        game:GetService("Debris"):AddItem(beam, 3)
-    end
-end, Color3.fromRGB(200, 50, 50))
-
--- 12. Meteoros
-createButton("☄️ Chuva de Meteoros", 540, function()
-    local root = getRoot()
-    if root then
-        for i = 1, 10 do
-            task.spawn(function()
-                local meteor = Instance.new("Part")
-                meteor.Size = Vector3.new(5, 5, 5)
-                meteor.Shape = Enum.PartType.Ball
-                meteor.Material = Enum.Material.Neon
-                meteor.Color = Color3.fromRGB(255, 100, 0)
-                meteor.Anchored = false
-                meteor.CanCollide = true
-                meteor.Position = root.Position + Vector3.new(math.random(-50, 50), 100, math.random(-50, 50))
-                meteor.Parent = Workspace
-                
-                game:GetService("Debris"):AddItem(meteor, 10)
-            end)
-        end
-    end
-end, Color3.fromRGB(200, 50, 50))
-
--- 13. Teleporte Aleatório
-createButton("🌀 Teleporte Aleatório", 580, function()
-    local root = getRoot()
-    if root then
-        root.CFrame = CFrame.new(
-            root.Position + Vector3.new(math.random(-100, 100), 0, math.random(-100, 100))
-        )
-    end
-end, Color3.fromRGB(200, 50, 50))
-
-createSeparator(625)
-
-createSection("🔧 Utilidades", 630)
-
--- 14. Anti-AFK
-createButton("⏰ Anti-AFK", 655, function()
-    local VirtualUser = game:GetService("VirtualUser")
-    Player.Idled:Connect(function()
-        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     end)
-end, Color3.fromRGB(100, 100, 100))
+    
+    barraTitulo.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement and arrastando then
+            local delta = input.Position - posInicialDrag
+            janela.Position = UDim2.new(
+                posJanelaDrag.X.Scale, 
+                posJanelaDrag.X.Offset + delta.X,
+                posJanelaDrag.Y.Scale, 
+                posJanelaDrag.Y.Offset + delta.Y
+            )
+        end
+    end)
+    
+    barraTitulo.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            arrastando = false
+        end
+    end)
+    
+    -- Clique do botão
+    botao.MouseButton1Click:Connect(alternarVisibilidade)
+end
 
--- 15. Curar
-createButton("❤️ Curar", 695, function()
-    local hum = getHumanoid()
-    if hum then
-        hum.Health = hum.MaxHealth
-    end
-end, Color3.fromRGB(100, 100, 100))
-
--- 16. Resetar
-createButton("🔄 Resetar", 735, function()
-    local char = getCharacter()
-    if char then
-        char:BreakJoints()
-    end
-end, Color3.fromRGB(100, 100, 100))
-
--- 17. Ficar Colorido
-createButton("🌈 Colorido", 775, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Color = Color3.fromHSV(math.random(), 1, 1)
-            end
+-- Sistema principal de invisibilidade (loop)
+local function sistemaInvisibilidade()
+    while task.wait() do
+        if ativo and torso and humanoide then
+            local cfOriginal = torso.CFrame
+            local camOffsetOriginal = humanoide.CameraOffset
+            
+            -- Mover personagem para baixo
+            local cfNovo = cfOriginal * CFrame.new(0, -200000, 0)
+            torso.CFrame = cfNovo
+            humanoide.CameraOffset = cfNovo:ToObjectSpace(CFrame.new(cfOriginal.Position)).Position
+            
+            -- Aguardar um frame
+            game:GetService("RunService").RenderStepped:Wait()
+            
+            -- Restaurar posição original
+            torso.CFrame = cfOriginal
+            humanoide.CameraOffset = camOffsetOriginal
         end
     end
-end, Color3.fromRGB(100, 100, 100))
+end
 
--- 18. Neon
-createButton("💡 Modo Neon", 815, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.Material = Enum.Material.Neon
-                part.Color = Color3.fromRGB(255, 0, 255)
-            end
-        end
+-- Reconectar quando personagem renascer
+jogador.CharacterAdded:Connect(function()
+    ativo = false
+    if botao then
+        botao.Text = "NoobVisivel: OFF"
     end
-end, Color3.fromRGB(100, 100, 100))
-
--- 19. Gravidade Zero
-createButton("🌌 Gravidade Zero", 855, function()
-    Workspace.Gravity = 0
-    task.wait(10)
-    Workspace.Gravity = 196.2
-end, Color3.fromRGB(100, 100, 100))
-
--- 20. Fogo
-createButton("🔥 Pegar Fogo", 895, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                local fire = Instance.new("Fire")
-                fire.Color = Color3.fromRGB(255, 100, 0)
-                fire.Heat = 25
-                fire.Size = 10
-                fire.Parent = part
-            end
-        end
-    end
-end, Color3.fromRGB(100, 100, 100))
-
--- 21. Fumaça
-createButton("💨 Fumaça", 935, function()
-    local root = getRoot()
-    if root then
-        local smoke = Instance.new("Smoke")
-        smoke.Color = Color3.fromRGB(100, 100, 100)
-        smoke.Opacity = 0.5
-        smoke.RiseVelocity = 10
-        smoke.Size = 20
-        smoke.Parent = root
-    end
-end, Color3.fromRGB(100, 100, 100))
-
--- 22. Sparkles
-createButton("✨ Brilho", 975, function()
-    local char = getCharacter()
-    if char then
-        for _, part in pairs(char:GetDescendants()) do
-            if part:IsA("BasePart") then
-                local sparkles = Instance.new("Sparkles")
-                sparkles.Color = Color3.fromRGB(255, 255, 0)
-                sparkles.Parent = part
-            end
-        end
-    end
-end, Color3.fromRGB(100, 100, 100))
-
--- Minimizar
-MinimizeButton.MouseButton1Click:Connect(function()
-    if isMinimized then
-        MainFrame.Size = originalSize
-        ContentContainer.Visible = true
-        MinimizeButton.Text = "—"
-        isMinimized = false
-    else
-        MainFrame.Size = UDim2.new(0, 300, 0, 35)
-        ContentContainer.Visible = false
-        MinimizeButton.Text = "+"
-        isMinimized = true
-    end
+    coletarPartes()
 end)
 
-print("⚡ NoobHub - 22 Tools Malucas carregadas!")
+-- Inicialização
+coletarPartes()
+criarInterface()
+
+-- Iniciar thread de invisibilidade
+local threadInvis = coroutine.create(sistemaInvisibilidade)
+coroutine.resume(threadInvis)
+
+-- Armazenar conexões para limpeza
+_G.NoobVisivel = {
+    threadInvis
+}
+
+print("NoobVisivel carregado com sucesso!")
+print("Pressione o botão na tela ou tecla 'G' para ativar/desativar")
