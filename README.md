@@ -1,14 +1,13 @@
 --[[
     NoobHub - Auto Bond para Dead Rails
-    Solução Corrigida: Teleporta e pega Bonds
-    GUI centralizada na tela
+    Ativa Remove Event do Bond sem teleportar
+    Verifica se é Bond e pega naturalmente
 ]]
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
-local TweenService = game:GetService("TweenService")
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -129,67 +128,173 @@ local bondsCollected = 0
 local autoBondConnections = {}
 local processedBonds = {}
 
--- Função para detectar Bonds (mais abrangente)
-local function detectBonds()
-    local bonds = {}
+-- Função para verificar se é um Bond
+local function isBond(obj)
+    if not obj or not obj.Parent then return false end
     
-    -- Procurar em todo workspace
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        local isValid = false
-        local objName = obj.Name:lower()
-        local parentName = obj.Parent and obj.Parent.Name:lower() or ""
-        
-        -- Verificar por múltiplos critérios
-        if obj:IsA("ProximityPrompt") then
-            isValid = true
-        elseif obj:IsA("ClickDetector") then
-            isValid = true
-        elseif obj:IsA("Tool") then
-            isValid = true
-        elseif obj:IsA("BasePart") and (
-            objName:find("bond") or
-            objName:find("bring") or
-            objName:find("money") or
-            objName:find("cash") or
-            objName:find("nota") or
-            objName:find("cedula") or
-            objName:find("coin") or
-            objName:find("bill")
-        ) then
-            isValid = true
+    local objName = obj.Name:lower()
+    local parentName = obj.Parent.Name:lower()
+    local grandparentName = obj.Parent.Parent and obj.Parent.Parent.Name:lower() or ""
+    
+    -- Verificar por nomes conhecidos
+    local bondNames = {
+        "bond", "bring", "dinheiro", "money", "cash", 
+        "dollar", "nota", "cedula", "coin", "bill",
+        "dinheiro_", "nota_", "money_", "cash_", "bond_"
+    }
+    
+    for _, name in pairs(bondNames) do
+        if objName:find(name) or parentName:find(name) or grandparentName:find(name) then
+            return true
         end
-        
-        -- Verificar por nomes específicos
+    end
+    
+    -- Verificar se é um RemotesEvent relacionado a coleta
+    if obj:IsA("RemoteEvent") then
+        local eventName = objName:lower()
+        if eventName:find("collect") or 
+           eventName:find("pick") or 
+           eventName:find("grab") or 
+           eventName:find("get") or 
+           eventName:find("remove") or 
+           eventName:find("bond") or
+           eventName:find("money") or
+           eventName:find("bring") then
+            return true
+        end
+    end
+    
+    -- Verificar se é ProximityPrompt ou ClickDetector
+    if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") then
         if objName:find("bond") or 
            objName:find("bring") or 
-           objName:find("dinheiro") or 
+           objName:find("pegar") or 
+           objName:find("coletar") or 
+           objName:find("collect") or
+           parentName:find("bond") or
+           parentName:find("bring") then
+            return true
+        end
+    end
+    
+    -- Verificar se é uma parte com TouchInterest
+    if obj:IsA("BasePart") and obj:FindFirstChild("TouchInterest") then
+        if objName:find("bond") or 
+           objName:find("bring") or 
            objName:find("money") or
            objName:find("cash") or
-           objName:find("dollar") or
-           objName:find("nota") or
-           objName:find("cedula") or
-           objName:find("coin") or
-           objName:find("bill") or
            parentName:find("bond") or
-           parentName:find("bring") or
-           parentName:find("money") then
-            isValid = true
+           parentName:find("bring") then
+            return true
         end
-        
-        if isValid and obj ~= Player.Character then
-            -- Verificar se não foi processado
-            local key = tostring(obj)
-            if not processedBonds[key] then
-                table.insert(bonds, obj)
+    end
+    
+    return false
+end
+
+-- Função para encontrar e ativar RemotesEvents de coleta
+local function findAndActivateCollectionEvents()
+    local collectionEvents = {}
+    
+    -- Procurar RemotesEvents no workspace e em serviços
+    local searchPlaces = {
+        Workspace,
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ReplicatedFirst"),
+        game:GetService("Players")
+    }
+    
+    for _, place in pairs(searchPlaces) do
+        for _, obj in pairs(place:GetDescendants()) do
+            if obj:IsA("RemoteEvent") then
+                local eventName = obj.Name:lower()
+                if eventName:find("collect") or 
+                   eventName:find("pick") or 
+                   eventName:find("grab") or 
+                   eventName:find("get") or 
+                   eventName:find("remove") or 
+                   eventName:find("bond") or
+                   eventName:find("money") or
+                   eventName:find("bring") or
+                   eventName:find("take") then
+                    table.insert(collectionEvents, obj)
+                end
             end
         end
     end
     
-    return bonds
+    return collectionEvents
 end
 
--- Função para pegar Bond (solução corrigida)
-local function collectBond(bond)
+-- Função para ativar RemotesEvents de coleta
+local function activateCollectionEvents()
+    local events = findAndActivateCollectionEvents()
+    local character = Player.Character
+    
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local rootPart = character.HumanoidRootPart
+    
+    for _, event in pairs(events) do
+        pcall(function()
+            -- Tentar ativar o evento de diferentes formas
+            event:FireServer()
+            
+            -- Tentar com argumentos
+            event:FireServer(rootPart)
+            event:FireServer(character)
+            event:FireServer(rootPart.Position)
+            
+            -- Tentar com o Bond mais próximo
+            local nearestBond = findNearestBond()
+            if nearestBond then
+                event:FireServer(nearestBond)
+                event:FireServer(nearestBond, rootPart)
+            end
+        end)
+    end
+end
+
+-- Função para encontrar Bond mais próximo
+local function findNearestBond()
+    local character = Player.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then
+        return nil
+    end
+    
+    local rootPart = character.HumanoidRootPart
+    local nearestBond = nil
+    local nearestDistance = math.huge
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if isBond(obj) then
+            local bondPosition = nil
+            
+            if obj:IsA("BasePart") then
+                bondPosition = obj.Position
+            elseif obj:IsA("Model") and obj.PrimaryPart then
+                bondPosition = obj.PrimaryPart.Position
+            elseif obj.Parent and obj.Parent:IsA("BasePart") then
+                bondPosition = obj.Parent.Position
+            end
+            
+            if bondPosition then
+                local distance = (rootPart.Position - bondPosition).Magnitude
+                if distance < nearestDistance then
+                    nearestDistance = distance
+                    nearestBond = obj
+                end
+            end
+        end
+    end
+    
+    return nearestBond
+end
+
+-- Função para pegar Bond sem teleportar
+local function collectBondWithoutTeleport(bond)
     if not isAutoBondActive then return end
     
     local character = Player.Character
@@ -200,112 +305,49 @@ local function collectBond(bond)
     local rootPart = character.HumanoidRootPart
     local humanoid = character:FindFirstChild("Humanoid")
     
-    -- Encontrar posição do Bond
-    local bondPosition = nil
-    local bondCFrame = nil
-    
-    if bond:IsA("BasePart") then
-        bondPosition = bond.Position
-        bondCFrame = bond.CFrame
-    elseif bond:IsA("Model") then
-        if bond.PrimaryPart then
-            bondPosition = bond.PrimaryPart.Position
-            bondCFrame = bond.PrimaryPart.CFrame
-        else
-            for _, child in pairs(bond:GetChildren()) do
-                if child:IsA("BasePart") then
-                    bondPosition = child.Position
-                    bondCFrame = child.CFrame
-                    break
-                end
-            end
-        end
-    elseif bond.Parent then
-        if bond.Parent:IsA("BasePart") then
-            bondPosition = bond.Parent.Position
-            bondCFrame = bond.Parent.CFrame
-        elseif bond.Parent:IsA("Model") and bond.Parent.PrimaryPart then
-            bondPosition = bond.Parent.PrimaryPart.Position
-            bondCFrame = bond.Parent.PrimaryPart.CFrame
-        end
+    -- Ativar RemotesEvents de coleta
+    local events = findAndActivateCollectionEvents()
+    for _, event in pairs(events) do
+        pcall(function()
+            event:FireServer(bond)
+            event:FireServer(bond, rootPart)
+            event:FireServer(bond, character)
+        end)
     end
     
-    if not bondPosition then return end
-    
-    -- TELEPORTAR EXATAMENTE EM CIMA DO BOND
-    rootPart.CFrame = CFrame.new(bondPosition + Vector3.new(0, 2, 0))
-    task.wait(0.3)
-    
-    -- Método 1: Tocar no Bond
-    if bond:IsA("BasePart") then
-        if bond:FindFirstChild("TouchInterest") then
-            firetouchinterest(rootPart, bond, 0)
-            firetouchinterest(rootPart, bond, 1)
-        end
-        -- Tentar tocar em partes do parent
-        if bond.Parent and bond.Parent:IsA("Model") then
-            for _, part in pairs(bond.Parent:GetChildren()) do
-                if part:IsA("BasePart") and part:FindFirstChild("TouchInterest") then
-                    firetouchinterest(rootPart, part, 0)
-                    firetouchinterest(rootPart, part, 1)
-                end
-            end
-        end
-    end
-    
-    -- Método 2: Procurar e ativar ProximityPrompt
-    local prompts = {}
+    -- Ativar ProximityPrompt sem teleportar
     if bond:IsA("ProximityPrompt") then
-        table.insert(prompts, bond)
-    end
-    
-    -- Procurar prompts no bond e nos filhos
-    local targetObject = bond
-    if bond.Parent and bond.Parent:IsA("Model") then
-        targetObject = bond.Parent
-    end
-    
-    for _, child in pairs(targetObject:GetDescendants()) do
-        if child:IsA("ProximityPrompt") then
-            table.insert(prompts, child)
-        end
-    end
-    
-    -- Ativar todos os prompts encontrados
-    for _, prompt in pairs(prompts) do
         pcall(function()
-            prompt:InputHoldBegin()
+            bond:InputHoldBegin()
             task.wait(0.3)
-            prompt:InputHoldEnd()
-            fireproximityprompt(prompt)
+            bond:InputHoldEnd()
+            fireproximityprompt(bond)
         end)
     end
     
-    -- Método 3: Clicar em ClickDetectors
-    local detectors = {}
-    if bond:IsA("ClickDetector") then
-        table.insert(detectors, bond)
-    end
-    
-    for _, child in pairs(targetObject:GetDescendants()) do
-        if child:IsA("ClickDetector") then
-            table.insert(detectors, child)
+    -- Procurar ProximityPrompt nos filhos
+    if bond.Parent then
+        for _, child in pairs(bond.Parent:GetDescendants()) do
+            if child:IsA("ProximityPrompt") then
+                pcall(function()
+                    child:InputHoldBegin()
+                    task.wait(0.3)
+                    child:InputHoldEnd()
+                    fireproximityprompt(child)
+                end)
+            end
+            if child:IsA("ClickDetector") then
+                pcall(function()
+                    fireclickdetector(child)
+                end)
+            end
         end
     end
     
-    for _, detector in pairs(detectors) do
-        pcall(function()
-            fireclickdetector(detector)
-        end)
-    end
-    
-    -- Método 4: Tentar equipar se for Tool
-    if bond:IsA("Tool") then
-        pcall(function()
-            humanoid:EquipTool(bond)
-            task.wait(0.5)
-            humanoid:UnequipTools()
-        end)
+    -- Ativar TouchInterest sem teleportar
+    if bond:IsA("BasePart") and bond:FindFirstChild("TouchInterest") then
+        firetouchinterest(rootPart, bond, 0)
+        firetouchinterest(rootPart, bond, 1)
     end
     
     -- Marcar como processado
@@ -313,15 +355,20 @@ local function collectBond(bond)
     bondsCollected = bondsCollected + 1
     BondsCollectedLabel.Text = "✅ Bonds Coletados: " .. bondsCollected
     
-    print("💵 Bond coletado com sucesso! Total: " .. bondsCollected)
-    
-    task.wait(0.5)
+    print("💵 Bond ativado! Total: " .. bondsCollected)
 end
 
 -- Função para contar Bonds no mapa
 local function countBondsOnMap()
-    local bonds = detectBonds()
-    return #bonds
+    local count = 0
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if isBond(obj) and not processedBonds[tostring(obj)] then
+            count = count + 1
+        end
+    end
+    
+    return count
 end
 
 -- Função para iniciar Auto Bond
@@ -335,7 +382,7 @@ local function startAutoBond()
     AutoBondButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     
     print("🎯 Auto Bond ATIVADO!")
-    print("💵 Teleportando e pegando Bonds...")
+    print("💵 Ativando RemotesEvents de coleta...")
     
     -- Loop principal
     autoBondConnections[#autoBondConnections + 1] = RunService.Heartbeat:Connect(function()
@@ -344,11 +391,13 @@ local function startAutoBond()
             local bondCount = countBondsOnMap()
             BondsOnMapLabel.Text = "💵 Bonds no Mapa: " .. bondCount
             
-            -- Pegar Bonds
-            local bonds = detectBonds()
-            for _, bond in pairs(bonds) do
-                if isAutoBondActive then
-                    collectBond(bond)
+            -- Ativar eventos de coleta
+            activateCollectionEvents()
+            
+            -- Pegar Bonds sem teleportar
+            for _, obj in pairs(Workspace:GetDescendants()) do
+                if isAutoBondActive and isBond(obj) and not processedBonds[tostring(obj)] then
+                    collectBondWithoutTeleport(obj)
                 end
             end
         end
@@ -356,10 +405,10 @@ local function startAutoBond()
     
     -- Monitorar novos Bonds
     autoBondConnections[#autoBondConnections + 1] = Workspace.DescendantAdded:Connect(function(descendant)
-        if isAutoBondActive then
-            task.wait(0.5)
+        if isAutoBondActive and isBond(descendant) and not processedBonds[tostring(descendant)] then
+            task.wait(0.3)
             if isAutoBondActive then
-                collectBond(descendant)
+                collectBondWithoutTeleport(descendant)
             end
         end
     end)
@@ -428,5 +477,6 @@ Player.CharacterAdded:Connect(function(character)
     end
 end)
 
-print("⚡ NoobHub - Auto Bond Corrigido carregado!")
-print("🎯 Teleporta e pega Bonds automaticamente!")
+print("⚡ NoobHub - Auto Bond sem Teleporte carregado!")
+print("🎯 Ativa RemotesEvents de coleta sem teleportar!")
+print("💵 Verifica e pega Bonds naturalmente!")
