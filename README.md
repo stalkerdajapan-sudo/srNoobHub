@@ -1,13 +1,14 @@
 --[[
-    NoobHub - Modo Medroso
-    Corre quando leva dano (de player ou NPC)
-    Sem teleporte, só corre na direção oposta
+    NoobHub - Tools Malucos
+    20+ Tools com GUI arrastável
 ]]
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -15,11 +16,11 @@ ScreenGui.Name = "NoobHub"
 ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 ScreenGui.ResetOnSpawn = false
 
--- Criar Frame principal (CENTRALIZADO)
+-- Criar Frame principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 280, 0, 100)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -50)
+MainFrame.Size = UDim2.new(0, 300, 0, 400)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -45,7 +46,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(0.7, 0, 1, 0)
 Title.Position = UDim2.new(0.05, 0, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "⚡ NoobHub"
+Title.Text = "⚡ NoobHub Tools"
 Title.TextColor3 = Color3.fromRGB(20, 20, 20)
 Title.TextSize = 16
 Title.Font = Enum.Font.GothamBlack
@@ -68,252 +69,464 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 5)
 MinCorner.Parent = MinimizeButton
 
--- Status Label
-local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(0.9, 0, 0, 25)
-StatusLabel.Position = UDim2.new(0.05, 0, 0.35, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Status: 🔴 Desativado"
-StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-StatusLabel.TextSize = 13
-StatusLabel.Font = Enum.Font.Gotham
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-StatusLabel.Parent = MainFrame
-
--- Botão Modo Medroso
-local ScaredButton = Instance.new("TextButton")
-ScaredButton.Size = UDim2.new(0.9, 0, 0, 30)
-ScaredButton.Position = UDim2.new(0.05, 0, 0.65, 0)
-ScaredButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-ScaredButton.BorderSizePixel = 0
-ScaredButton.Text = "😨 ATIVAR MODO MEDROSO"
-ScaredButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-ScaredButton.TextSize = 12
-ScaredButton.Font = Enum.Font.GothamBold
-ScaredButton.Parent = MainFrame
-
-local ScaredCorner = Instance.new("UICorner")
-ScaredCorner.CornerRadius = UDim.new(0, 5)
-ScaredCorner.Parent = ScaredButton
+-- Container com scroll
+local ContentContainer = Instance.new("ScrollingFrame")
+ContentContainer.Size = UDim2.new(1, -10, 1, -40)
+ContentContainer.Position = UDim2.new(0, 5, 0, 40)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.BorderSizePixel = 0
+ContentContainer.ScrollBarThickness = 4
+ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(255, 180, 0)
+ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 1200)
+ContentContainer.Parent = MainFrame
 
 -- Variáveis
-local isScaredActive = false
 local isMinimized = false
 local originalSize = MainFrame.Size
-local isRunning = false
-local lastHealth = nil
-local scaredConnections = {}
-local runSpeed = 80
-local normalSpeed = 16
-local runDuration = 3
+local flyBody = nil
+local flyGyro = nil
+local isFlying = false
+local isNoclipping = false
+local noclipConnection = nil
+local speedLoop = nil
 
--- Função para encontrar fonte de dano
-local function findDamageSource()
-    local character = Player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return nil
+-- Função para criar botão
+local function createButton(name, yPos, callback, color)
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -10, 0, 35)
+    Button.Position = UDim2.new(0, 5, 0, yPos)
+    Button.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
+    Button.BorderSizePixel = 0
+    Button.Text = name
+    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Button.TextSize = 12
+    Button.Font = Enum.Font.GothamBold
+    Button.AutoButtonColor = true
+    Button.Parent = ContentContainer
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 5)
+    ButtonCorner.Parent = Button
+    
+    Button.MouseButton1Click:Connect(callback)
+    return Button
+end
+
+-- Função para criar separador
+local function createSeparator(yPos)
+    local Separator = Instance.new("Frame")
+    Separator.Size = UDim2.new(1, -10, 0, 2)
+    Separator.Position = UDim2.new(0, 5, 0, yPos)
+    Separator.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
+    Separator.BorderSizePixel = 0
+    Separator.Parent = ContentContainer
+end
+
+-- Função para criar label de seção
+local function createSection(text, yPos)
+    local Label = Instance.new("TextLabel")
+    Label.Size = UDim2.new(1, -10, 0, 20)
+    Label.Position = UDim2.new(0, 5, 0, yPos)
+    Label.BackgroundTransparency = 1
+    Label.Text = text
+    Label.TextColor3 = Color3.fromRGB(255, 180, 0)
+    Label.TextSize = 14
+    Label.Font = Enum.Font.GothamBlack
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = ContentContainer
+end
+
+-- Função para pegar personagem
+local function getCharacter()
+    return Player.Character
+end
+
+-- Função para pegar root
+local function getRoot()
+    local char = getCharacter()
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+-- Função para pegar humanoid
+local function getHumanoid()
+    local char = getCharacter()
+    return char and char:FindFirstChild("Humanoid")
+end
+
+-- Criar as Tools
+createSection("🏃 Movimento", 5)
+
+-- 1. Speed
+createButton("⚡ Speed (100)", 30, function()
+    local hum = getHumanoid()
+    if hum then
+        hum.WalkSpeed = 100
+        task.wait(10)
+        hum.WalkSpeed = 16
     end
-    
-    local rootPart = character.HumanoidRootPart
-    local nearestThreat = nil
-    local nearestDistance = math.huge
-    
-    -- Procurar players próximos
-    for _, otherPlayer in pairs(Players:GetPlayers()) do
-        if otherPlayer ~= Player then
-            local otherCharacter = otherPlayer.Character
-            if otherCharacter and otherCharacter:FindFirstChild("HumanoidRootPart") then
-                local otherRoot = otherCharacter.HumanoidRootPart
-                local distance = (rootPart.Position - otherRoot.Position).Magnitude
+end, Color3.fromRGB(50, 100, 200))
+
+-- 2. Super Jump
+createButton("🦘 Super Jump", 70, function()
+    local hum = getHumanoid()
+    if hum then
+        hum.JumpPower = 150
+        task.wait(10)
+        hum.JumpPower = 50
+    end
+end, Color3.fromRGB(50, 100, 200))
+
+-- 3. Fly
+createButton("🚀 Fly", 110, function()
+    local root = getRoot()
+    local hum = getHumanoid()
+    if root and hum then
+        if not isFlying then
+            isFlying = true
+            flyBody = Instance.new("BodyVelocity")
+            flyBody.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+            flyBody.Velocity = Vector3.new(0, 0, 0)
+            flyBody.Parent = root
+            
+            flyGyro = Instance.new("BodyGyro")
+            flyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+            flyGyro.CFrame = root.CFrame
+            flyGyro.Parent = root
+            
+            hum.PlatformStand = true
+            
+            local connection
+            connection = RunService.Heartbeat:Connect(function()
+                if not isFlying or not root or not flyBody then
+                    connection:Disconnect()
+                    return
+                end
                 
-                if distance < nearestDistance and distance < 30 then
-                    nearestDistance = distance
-                    nearestThreat = otherRoot.Position
+                local direction = Vector3.new(0, 0, 0)
+                if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                    direction = direction + root.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                    direction = direction - root.CFrame.LookVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                    direction = direction - root.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                    direction = direction + root.CFrame.RightVector
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                    direction = direction + Vector3.new(0, 1, 0)
+                end
+                if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                    direction = direction - Vector3.new(0, 1, 0)
+                end
+                
+                flyBody.Velocity = direction * 50
+            end)
+        else
+            isFlying = false
+            if flyBody then flyBody:Destroy() end
+            if flyGyro then flyGyro:Destroy() end
+            hum.PlatformStand = false
+        end
+    end
+end, Color3.fromRGB(50, 100, 200))
+
+-- 4. Noclip
+createButton("👻 Noclip", 150, function()
+    if not isNoclipping then
+        isNoclipping = true
+        noclipConnection = RunService.Stepped:Connect(function()
+            local char = getCharacter()
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        isNoclipping = false
+        if noclipConnection then
+            noclipConnection:Disconnect()
+        end
+        local char = getCharacter()
+        if char then
+            for _, part in pairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = true
                 end
             end
         end
     end
-    
-    -- Procurar NPCs próximos
-    for _, obj in pairs(Workspace:GetDescendants()) do
-        if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-            local humanoid = obj:FindFirstChild("Humanoid")
-            local npcRoot = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-            
-            if npcRoot and humanoid.Health > 0 then
-                local isPlayer = false
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player.Character == obj then
-                        isPlayer = true
-                        break
-                    end
-                end
-                
-                if not isPlayer then
-                    local distance = (rootPart.Position - npcRoot.Position).Magnitude
-                    if distance < nearestDistance and distance < 30 then
-                        nearestDistance = distance
-                        nearestThreat = npcRoot.Position
-                    end
-                end
+end, Color3.fromRGB(50, 100, 200))
+
+createSeparator(195)
+
+createSection("💪 Poder", 200)
+
+-- 5. God Mode
+createButton("🛡️ God Mode", 225, function()
+    local hum = getHumanoid()
+    if hum then
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
+    end
+end, Color3.fromRGB(200, 150, 0))
+
+-- 6. Força
+createButton("💥 Força Bruta", 265, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Massless = false
+                part.Material = Enum.Material.DiamondPlate
             end
         end
     end
-    
-    return nearestThreat
-end
+end, Color3.fromRGB(200, 150, 0))
 
--- Função para correr
-local function runAway()
-    if isRunning then return end
-    
-    local character = Player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") or not character:FindFirstChild("Humanoid") then
-        return
-    end
-    
-    local rootPart = character.HumanoidRootPart
-    local humanoid = character.Humanoid
-    
-    -- Encontrar fonte de dano
-    local threatPosition = findDamageSource()
-    
-    if not threatPosition then
-        -- Se não achou ameaça, corre em direção aleatória
-        threatPosition = rootPart.Position - Vector3.new(math.random(-100, 100), 0, math.random(-100, 100))
-    end
-    
-    -- Calcular direção oposta
-    local direction = (rootPart.Position - threatPosition).Unit
-    direction = Vector3.new(direction.X, 0, direction.Z)
-    
-    if direction.Magnitude == 0 then
-        direction = Vector3.new(math.random(-1, 1), 0, math.random(-1, 1)).Unit
-    end
-    
-    isRunning = true
-    
-    -- Aumentar velocidade
-    humanoid.WalkSpeed = runSpeed
-    
-    -- Correr na direção oposta
-    local targetPosition = rootPart.Position + direction * 50
-    
-    -- Mover o personagem
-    humanoid:MoveTo(targetPosition)
-    
-    print("😨 AI! Tomei dano! Correndo!")
-    
-    -- Esperar e restaurar velocidade
-    task.delay(runDuration, function()
-        if isScaredActive and character and character:FindFirstChild("Humanoid") then
-            character.Humanoid.WalkSpeed = normalSpeed
+-- 7. Invisível
+createButton("👁️ Invisível", 305, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Transparency = 1
+            end
         end
-        isRunning = false
-    end)
-end
-
--- Função para iniciar Modo Medroso
-local function startScaredMode()
-    if isScaredActive then return end
-    
-    isScaredActive = true
-    StatusLabel.Text = "Status: 🟢 Ativado"
-    StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    ScaredButton.Text = "😨 DESATIVAR MODO MEDROSO"
-    ScaredButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
-    
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        lastHealth = character.Humanoid.Health
     end
-    
-    print("😨 Modo Medroso ATIVADO!")
-    print("🏃 Vou correr quando tomar dano!")
-    
-    -- Monitorar dano
-    scaredConnections[#scaredConnections + 1] = Player.CharacterAdded:Connect(function(char)
-        if isScaredActive then
-            local humanoid = char:WaitForChild("Humanoid")
-            lastHealth = humanoid.Health
-            
-            scaredConnections[#scaredConnections + 1] = humanoid.HealthChanged:Connect(function(health)
-                if isScaredActive and health < lastHealth then
-                    -- Tomou dano!
-                    runAway()
-                end
-                lastHealth = health
+end, Color3.fromRGB(200, 150, 0))
+
+-- 8. Gigante
+createButton("🎈 Gigante", 345, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Size = part.Size * 2
+            end
+        end
+    end
+end, Color3.fromRGB(200, 150, 0))
+
+-- 9. Pequeno
+createButton("🐜 Pequeno", 385, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Size = part.Size * 0.5
+            end
+        end
+    end
+end, Color3.fromRGB(200, 150, 0))
+
+createSeparator(430)
+
+createSection("🎯 Ataque", 435)
+
+-- 10. Explosão
+createButton("💣 Explosão", 460, function()
+    local root = getRoot()
+    if root then
+        local explosion = Instance.new("Explosion")
+        explosion.Position = root.Position
+        explosion.BlastRadius = 50
+        explosion.DestroyJointRadiusPercent = 0
+        explosion.Parent = Workspace
+    end
+end, Color3.fromRGB(200, 50, 50))
+
+-- 11. Raio Laser
+createButton("🔫 Raio Laser", 500, function()
+    local root = getRoot()
+    if root then
+        local beam = Instance.new("Beam")
+        beam.Name = "LaserBeam"
+        
+        local startPart = Instance.new("Part")
+        startPart.Size = Vector3.new(1, 1, 1)
+        startPart.Position = root.Position
+        startPart.Anchored = true
+        startPart.CanCollide = false
+        startPart.Transparency = 1
+        startPart.Parent = Workspace
+        
+        local endPart = Instance.new("Part")
+        endPart.Size = Vector3.new(1, 1, 1)
+        endPart.Position = root.Position + root.CFrame.LookVector * 50
+        endPart.Anchored = true
+        endPart.CanCollide = false
+        endPart.Transparency = 1
+        endPart.Parent = Workspace
+        
+        beam.Attachment0 = Instance.new("Attachment", startPart)
+        beam.Attachment1 = Instance.new("Attachment", endPart)
+        beam.Color = ColorSequence.new(Color3.fromRGB(255, 0, 0))
+        beam.Width0 = 0.5
+        beam.Width1 = 0.5
+        beam.Parent = Workspace
+        
+        game:GetService("Debris"):AddItem(startPart, 3)
+        game:GetService("Debris"):AddItem(endPart, 3)
+        game:GetService("Debris"):AddItem(beam, 3)
+    end
+end, Color3.fromRGB(200, 50, 50))
+
+-- 12. Meteoros
+createButton("☄️ Chuva de Meteoros", 540, function()
+    local root = getRoot()
+    if root then
+        for i = 1, 10 do
+            task.spawn(function()
+                local meteor = Instance.new("Part")
+                meteor.Size = Vector3.new(5, 5, 5)
+                meteor.Shape = Enum.PartType.Ball
+                meteor.Material = Enum.Material.Neon
+                meteor.Color = Color3.fromRGB(255, 100, 0)
+                meteor.Anchored = false
+                meteor.CanCollide = true
+                meteor.Position = root.Position + Vector3.new(math.random(-50, 50), 100, math.random(-50, 50))
+                meteor.Parent = Workspace
+                
+                game:GetService("Debris"):AddItem(meteor, 10)
             end)
         end
+    end
+end, Color3.fromRGB(200, 50, 50))
+
+-- 13. Teleporte Aleatório
+createButton("🌀 Teleporte Aleatório", 580, function()
+    local root = getRoot()
+    if root then
+        root.CFrame = CFrame.new(
+            root.Position + Vector3.new(math.random(-100, 100), 0, math.random(-100, 100))
+        )
+    end
+end, Color3.fromRGB(200, 50, 50))
+
+createSeparator(625)
+
+createSection("🔧 Utilidades", 630)
+
+-- 14. Anti-AFK
+createButton("⏰ Anti-AFK", 655, function()
+    local VirtualUser = game:GetService("VirtualUser")
+    Player.Idled:Connect(function()
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
     end)
-    
-    -- Conectar no personagem atual
-    if character and character:FindFirstChild("Humanoid") then
-        scaredConnections[#scaredConnections + 1] = character.Humanoid.HealthChanged:Connect(function(health)
-            if isScaredActive and health < lastHealth then
-                -- Tomou dano!
-                runAway()
+end, Color3.fromRGB(100, 100, 100))
+
+-- 15. Curar
+createButton("❤️ Curar", 695, function()
+    local hum = getHumanoid()
+    if hum then
+        hum.Health = hum.MaxHealth
+    end
+end, Color3.fromRGB(100, 100, 100))
+
+-- 16. Resetar
+createButton("🔄 Resetar", 735, function()
+    local char = getCharacter()
+    if char then
+        char:BreakJoints()
+    end
+end, Color3.fromRGB(100, 100, 100))
+
+-- 17. Ficar Colorido
+createButton("🌈 Colorido", 775, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Color = Color3.fromHSV(math.random(), 1, 1)
             end
-            lastHealth = health
-        end)
+        end
     end
-end
+end, Color3.fromRGB(100, 100, 100))
 
--- Função para parar Modo Medroso
-local function stopScaredMode()
-    if not isScaredActive then return end
-    
-    isScaredActive = false
-    StatusLabel.Text = "Status: 🔴 Desativado"
-    StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-    ScaredButton.Text = "😨 ATIVAR MODO MEDROSO"
-    ScaredButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
-    
-    print("😨 Modo Medroso DESATIVADO!")
-    
-    -- Desconectar
-    for _, conn in pairs(scaredConnections) do
-        conn:Disconnect()
+-- 18. Neon
+createButton("💡 Modo Neon", 815, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Material = Enum.Material.Neon
+                part.Color = Color3.fromRGB(255, 0, 255)
+            end
+        end
     end
-    scaredConnections = {}
-    
-    -- Restaurar velocidade
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.WalkSpeed = normalSpeed
-    end
-end
+end, Color3.fromRGB(100, 100, 100))
 
--- Toggle Modo Medroso
-ScaredButton.MouseButton1Click:Connect(function()
-    if isScaredActive then
-        stopScaredMode()
-    else
-        startScaredMode()
+-- 19. Gravidade Zero
+createButton("🌌 Gravidade Zero", 855, function()
+    Workspace.Gravity = 0
+    task.wait(10)
+    Workspace.Gravity = 196.2
+end, Color3.fromRGB(100, 100, 100))
+
+-- 20. Fogo
+createButton("🔥 Pegar Fogo", 895, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local fire = Instance.new("Fire")
+                fire.Color = Color3.fromRGB(255, 100, 0)
+                fire.Heat = 25
+                fire.Size = 10
+                fire.Parent = part
+            end
+        end
     end
-end)
+end, Color3.fromRGB(100, 100, 100))
+
+-- 21. Fumaça
+createButton("💨 Fumaça", 935, function()
+    local root = getRoot()
+    if root then
+        local smoke = Instance.new("Smoke")
+        smoke.Color = Color3.fromRGB(100, 100, 100)
+        smoke.Opacity = 0.5
+        smoke.RiseVelocity = 10
+        smoke.Size = 20
+        smoke.Parent = root
+    end
+end, Color3.fromRGB(100, 100, 100))
+
+-- 22. Sparkles
+createButton("✨ Brilho", 975, function()
+    local char = getCharacter()
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local sparkles = Instance.new("Sparkles")
+                sparkles.Color = Color3.fromRGB(255, 255, 0)
+                sparkles.Parent = part
+            end
+        end
+    end
+end, Color3.fromRGB(100, 100, 100))
 
 -- Minimizar
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
         MainFrame.Size = originalSize
-        StatusLabel.Visible = true
-        ScaredButton.Visible = true
+        ContentContainer.Visible = true
         MinimizeButton.Text = "—"
         isMinimized = false
     else
-        MainFrame.Size = UDim2.new(0, 280, 0, 35)
-        StatusLabel.Visible = false
-        ScaredButton.Visible = false
+        MainFrame.Size = UDim2.new(0, 300, 0, 35)
+        ContentContainer.Visible = false
         MinimizeButton.Text = "+"
         isMinimized = true
     end
 end)
 
--- Limpar quando destruir
-ScreenGui.Destroying:Connect(function()
-    stopScaredMode()
-end)
-
-print("⚡ NoobHub - Modo Medroso carregado!")
-print("😨 Ative para correr quando tomar dano!")
+print("⚡ NoobHub - 22 Tools Malucas carregadas!")
