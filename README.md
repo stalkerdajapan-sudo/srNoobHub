@@ -1,6 +1,6 @@
 --[[
     SrNoobHub - Universal Script
-    GUI Moderna com Drag e Minimizar
+    GUI Moderna com Drag, Minimizar e TextBox
 ]]
 
 local Players = game:GetService("Players")
@@ -37,7 +37,7 @@ MainContainer.Parent = SrNoobHub
 MainContainer.BackgroundColor3 = Colors.Background
 MainContainer.BorderSizePixel = 0
 MainContainer.Position = UDim2.new(0.5, -150, 0.5, -175)
-MainContainer.Size = UDim2.new(0, 300, 0, 400)
+MainContainer.Size = UDim2.new(0, 300, 0, 380)
 MainContainer.ClipsDescendants = true
 MainContainer.ZIndex = 2
 
@@ -113,125 +113,6 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 4)
 CloseCorner.Parent = CloseButton
 
--- Função para criar labels
-local function CreateLabel(parent, text, position)
-    local label = Instance.new("TextLabel")
-    label.Parent = parent
-    label.BackgroundTransparency = 1
-    label.Position = position
-    label.Size = UDim2.new(0, 100, 0, 25)
-    label.Font = Enum.Font.Gotham
-    label.Text = text
-    label.TextColor3 = Colors.Text
-    label.TextSize = 12
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    return label
-end
-
--- Função para criar caixas de texto
-local function CreateTextBox(parent, position, value)
-    local textbox = Instance.new("TextBox")
-    textbox.Parent = parent
-    textbox.BackgroundColor3 = Colors.Secondary
-    textbox.BorderSizePixel = 0
-    textbox.Position = position
-    textbox.Size = UDim2.new(0, 70, 0, 25)
-    textbox.Font = Enum.Font.Gotham
-    textbox.Text = tostring(value)
-    textbox.TextColor3 = Colors.Text
-    textbox.TextSize = 12
-    textbox.PlaceholderText = "Valor"
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 4)
-    corner.Parent = textbox
-    
-    return textbox
-end
-
--- Função para criar sliders
-local function CreateSlider(parent, position, min, max, value)
-    local sliderFrame = Instance.new("Frame")
-    sliderFrame.Parent = parent
-    sliderFrame.BackgroundColor3 = Colors.Secondary
-    sliderFrame.BorderSizePixel = 0
-    sliderFrame.Position = position
-    sliderFrame.Size = UDim2.new(0, 150, 0, 20)
-    
-    local sliderCorner = Instance.new("UICorner")
-    sliderCorner.CornerRadius = UDim.new(0, 10)
-    sliderCorner.Parent = sliderFrame
-    
-    local fill = Instance.new("Frame")
-    fill.Name = "Fill"
-    fill.Parent = sliderFrame
-    fill.BackgroundColor3 = Colors.Accent
-    fill.BorderSizePixel = 0
-    fill.Size = UDim2.new((value - min) / (max - min), 0, 1, 0)
-    
-    local fillCorner = Instance.new("UICorner")
-    fillCorner.CornerRadius = UDim.new(0, 10)
-    fillCorner.Parent = fill
-    
-    local knob = Instance.new("TextButton")
-    knob.Name = "Knob"
-    knob.Parent = sliderFrame
-    knob.BackgroundColor3 = Colors.Text
-    knob.BorderSizePixel = 0
-    knob.Position = UDim2.new((value - min) / (max - min), -8, 0.5, -8)
-    knob.Size = UDim2.new(0, 16, 0, 16)
-    knob.Text = ""
-    
-    local knobCorner = Instance.new("UICorner")
-    knobCorner.CornerRadius = UDim.new(0, 8)
-    knobCorner.Parent = knob
-    
-    local valueLabel = Instance.new("TextLabel")
-    valueLabel.Name = "ValueLabel"
-    valueLabel.Parent = sliderFrame
-    valueLabel.BackgroundTransparency = 1
-    valueLabel.Position = UDim2.new(0, -60, 0, 0)
-    valueLabel.Size = UDim2.new(0, 50, 0, 20)
-    valueLabel.Font = Enum.Font.GothamBold
-    valueLabel.Text = tostring(value)
-    valueLabel.TextColor3 = Colors.Accent
-    valueLabel.TextSize = 11
-    
-    -- Drag functionality
-    local dragging = false
-    local connection
-    
-    knob.MouseButton1Down:Connect(function()
-        dragging = true
-        connection = UserInputService.InputChanged:Connect(function(input)
-            if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                local mousePos = UserInputService:GetMouseLocation()
-                local sliderPos = sliderFrame.AbsolutePosition
-                local sliderSize = sliderFrame.AbsoluteSize
-                local relativeX = math.clamp(mousePos.X - sliderPos.X, 0, sliderSize.X)
-                local percent = relativeX / sliderSize.X
-                
-                fill.Size = UDim2.new(percent, 0, 1, 0)
-                knob.Position = UDim2.new(percent, -8, 0.5, -8)
-                
-                local newValue = math.floor(min + (max - min) * percent)
-                valueLabel.Text = tostring(newValue)
-            end
-        end)
-    end)
-    
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = false
-            if connection then
-                connection:Disconnect()
-            end
-        end
-    end)
-    
-    return sliderFrame, valueLabel
-end
-
 -- Conteúdo
 local ContentFrame = Instance.new("Frame")
 ContentFrame.Name = "ContentFrame"
@@ -241,18 +122,73 @@ ContentFrame.BorderSizePixel = 0
 ContentFrame.Position = UDim2.new(0, 0, 0, 60)
 ContentFrame.Size = UDim2.new(1, 0, 1, -60)
 
--- Sliders
-CreateLabel(ContentFrame, "⚡ Velocidade", UDim2.new(0, 15, 0, 0))
-local SpeedSlider, SpeedValue = CreateSlider(ContentFrame, UDim2.new(0, 130, 0, 5), 1, 100, 16)
+-- Função para criar labels
+local function CreateLabel(parent, text, position)
+    local label = Instance.new("TextLabel")
+    label.Parent = parent
+    label.BackgroundTransparency = 1
+    label.Position = position
+    label.Size = UDim2.new(0, 110, 0, 30)
+    label.Font = Enum.Font.Gotham
+    label.Text = text
+    label.TextColor3 = Colors.Text
+    label.TextSize = 12
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    return label
+end
 
-CreateLabel(ContentFrame, "🦘 Pulo", UDim2.new(0, 15, 0, 35))
-local JumpSlider, JumpValue = CreateSlider(ContentFrame, UDim2.new(0, 130, 0, 40), 1, 200, 50)
+-- Função para criar TextBox
+local function CreateTextBox(parent, position, value, placeholder)
+    local textbox = Instance.new("TextBox")
+    textbox.Parent = parent
+    textbox.BackgroundColor3 = Colors.Secondary
+    textbox.BorderSizePixel = 0
+    textbox.Position = position
+    textbox.Size = UDim2.new(0, 160, 0, 30)
+    textbox.Font = Enum.Font.Gotham
+    textbox.Text = tostring(value)
+    textbox.TextColor3 = Colors.Text
+    textbox.TextSize = 12
+    textbox.PlaceholderText = placeholder or "Digite o valor..."
+    textbox.TextXAlignment = Enum.TextXAlignment.Center
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 6)
+    corner.Parent = textbox
+    
+    -- Efeito hover
+    textbox.MouseEnter:Connect(function()
+        TweenService:Create(textbox, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 60)}):Play()
+    end)
+    
+    textbox.MouseLeave:Connect(function()
+        TweenService:Create(textbox, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Secondary}):Play()
+    end)
+    
+    -- Efeito focus
+    textbox.Focused:Connect(function()
+        TweenService:Create(textbox, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(50, 50, 65)}):Play()
+    end)
+    
+    textbox.FocusLost:Connect(function()
+        TweenService:Create(textbox, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Secondary}):Play()
+    end)
+    
+    return textbox
+end
 
-CreateLabel(ContentFrame, "🌍 Gravidade", UDim2.new(0, 15, 0, 70))
-local GravitySlider, GravityValue = CreateSlider(ContentFrame, UDim2.new(0, 130, 0, 75), 1, 500, 196.2)
+-- Criar campos de edição
+CreateLabel(ContentFrame, "⚡ Velocidade:", UDim2.new(0, 15, 0, 10))
+local SpeedInput = CreateTextBox(ContentFrame, UDim2.new(0, 125, 0, 10), 16, "Velocidade (1-100)")
 
-CreateLabel(ContentFrame, "🏋️ Massa", UDim2.new(0, 15, 0, 105))
-local MassSlider, MassValue = CreateSlider(ContentFrame, UDim2.new(0, 130, 0, 110), 1, 1000, 100)
+CreateLabel(ContentFrame, "🦘 Pulo:", UDim2.new(0, 15, 0, 50))
+local JumpInput = CreateTextBox(ContentFrame, UDim2.new(0, 125, 0, 50), 50, "Pulo (1-200)")
+
+CreateLabel(ContentFrame, "🌍 Gravidade:", UDim2.new(0, 15, 0, 90))
+local GravityInput = CreateTextBox(ContentFrame, UDim2.new(0, 125, 0, 90), 196.2, "Gravidade (1-500)")
+
+CreateLabel(ContentFrame, "🏋️ Massa:", UDim2.new(0, 15, 0, 130))
+local MassInput = CreateTextBox(ContentFrame, UDim2.new(0, 125, 0, 130), 100, "Massa (1-1000)")
 
 -- Botões
 local ApplyButton = Instance.new("TextButton")
@@ -260,7 +196,7 @@ ApplyButton.Name = "ApplyButton"
 ApplyButton.Parent = ContentFrame
 ApplyButton.BackgroundColor3 = Colors.Success
 ApplyButton.BorderSizePixel = 0
-ApplyButton.Position = UDim2.new(0, 15, 0, 150)
+ApplyButton.Position = UDim2.new(0, 15, 0, 175)
 ApplyButton.Size = UDim2.new(0, 130, 0, 35)
 ApplyButton.Font = Enum.Font.GothamBold
 ApplyButton.Text = "✅ Aplicar"
@@ -271,12 +207,21 @@ local ApplyCorner = Instance.new("UICorner")
 ApplyCorner.CornerRadius = UDim.new(0, 6)
 ApplyCorner.Parent = ApplyButton
 
+-- Efeito hover Apply
+ApplyButton.MouseEnter:Connect(function()
+    TweenService:Create(ApplyButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(40, 180, 90)}):Play()
+end)
+
+ApplyButton.MouseLeave:Connect(function()
+    TweenService:Create(ApplyButton, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Success}):Play()
+end)
+
 local ResetButton = Instance.new("TextButton")
 ResetButton.Name = "ResetButton"
 ResetButton.Parent = ContentFrame
 ResetButton.BackgroundColor3 = Colors.Danger
 ResetButton.BorderSizePixel = 0
-ResetButton.Position = UDim2.new(0, 155, 0, 150)
+ResetButton.Position = UDim2.new(0, 155, 0, 175)
 ResetButton.Size = UDim2.new(0, 130, 0, 35)
 ResetButton.Font = Enum.Font.GothamBold
 ResetButton.Text = "🔄 Resetar"
@@ -286,6 +231,15 @@ ResetButton.TextSize = 13
 local ResetCorner = Instance.new("UICorner")
 ResetCorner.CornerRadius = UDim.new(0, 6)
 ResetCorner.Parent = ResetButton
+
+-- Efeito hover Reset
+ResetButton.MouseEnter:Connect(function()
+    TweenService:Create(ResetButton, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(230, 60, 60)}):Play()
+end)
+
+ResetButton.MouseLeave:Connect(function()
+    TweenService:Create(ResetButton, TweenInfo.new(0.2), {BackgroundColor3 = Colors.Danger}):Play()
+end)
 
 -- Drag System
 local dragging = false
@@ -332,7 +286,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
         TweenService:Create(MainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 300, 0, 50)}):Play()
         MinimizeButton.Text = "+"
     else
-        TweenService:Create(MainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 300, 0, 400)}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 300, 0, 380)}):Play()
         MinimizeButton.Text = "—"
     end
 end)
@@ -346,10 +300,22 @@ end)
 
 -- Funções de Aplicação
 local function ApplyChanges()
-    local speed = tonumber(SpeedValue.Text) or 16
-    local jump = tonumber(JumpValue.Text) or 50
-    local gravity = tonumber(GravityValue.Text) or 196.2
-    local mass = tonumber(MassValue.Text) or 100
+    local speed = tonumber(SpeedInput.Text) or 16
+    local jump = tonumber(JumpInput.Text) or 50
+    local gravity = tonumber(GravityInput.Text) or 196.2
+    local mass = tonumber(MassInput.Text) or 100
+    
+    -- Limitar valores
+    speed = math.clamp(speed, 1, 100)
+    jump = math.clamp(jump, 1, 200)
+    gravity = math.clamp(gravity, 1, 500)
+    mass = math.clamp(mass, 1, 1000)
+    
+    -- Atualizar TextBox com valores limitados
+    SpeedInput.Text = tostring(speed)
+    JumpInput.Text = tostring(jump)
+    GravityInput.Text = tostring(gravity)
+    MassInput.Text = tostring(mass)
     
     if Humanoid then
         Humanoid.WalkSpeed = speed
@@ -368,6 +334,9 @@ local function ApplyChanges()
         
         -- Massa
         RootPart.CustomPhysicalProperties = PhysicalProperties.new(mass, 0.3, 0.5)
+        
+        -- Notificação
+        print("✅ SrNoobHub: Valores aplicados com sucesso!")
     end
 end
 
@@ -382,12 +351,37 @@ local function ResetChanges()
         end
         
         RootPart.CustomPhysicalProperties = PhysicalProperties.new(100, 0.3, 0.5)
+        
+        -- Resetar TextBox
+        SpeedInput.Text = "16"
+        JumpInput.Text = "50"
+        GravityInput.Text = "196.2"
+        MassInput.Text = "100"
+        
+        print("🔄 SrNoobHub: Valores resetados!")
     end
 end
 
 -- Eventos
 ApplyButton.MouseButton1Click:Connect(ApplyChanges)
 ResetButton.MouseButton1Click:Connect(ResetChanges)
+
+-- Aplicar com Enter
+SpeedInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then ApplyChanges() end
+end)
+
+JumpInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then ApplyChanges() end
+end)
+
+GravityInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then ApplyChanges() end
+end)
+
+MassInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then ApplyChanges() end
+end)
 
 -- Auto-atualizar quando respawnar
 Player.CharacterAdded:Connect(function(newCharacter)
