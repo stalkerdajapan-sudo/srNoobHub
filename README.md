@@ -1,15 +1,11 @@
 --[[
-    NoobHub - Survive Natural Disaster
-    Script Completo com GUI Moderna Amarela
-    Sistema Medroso + Cheats + GUI Minimizável
+    NoobHub - God Mode com Frame Separado
+    Seu corpo real fica jogando, frame fica no topo do mapa
 ]]
 
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
-local Mouse = Player:GetMouse()
 local RunService = game:GetService("RunService")
-local UserInputService = game:GetService("UserInputService")
-local TweenService = game:GetService("TweenService")
 
 -- Criar ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -20,54 +16,49 @@ ScreenGui.ResetOnSpawn = false
 -- Criar Frame principal
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 320, 0, 500)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -250)
+MainFrame.Size = UDim2.new(0, 250, 0, 80)
+MainFrame.Position = UDim2.new(0.5, -125, 0.1, -40)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
--- Corner para o MainFrame
 local MainCorner = Instance.new("UICorner")
-MainCorner.CornerRadius = UDim.new(0, 12)
+MainCorner.CornerRadius = UDim.new(0, 10)
 MainCorner.Parent = MainFrame
 
 -- Barra de título
 local TitleBar = Instance.new("Frame")
-TitleBar.Name = "TitleBar"
-TitleBar.Size = UDim2.new(1, 0, 0, 45)
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
 TitleBar.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
 TitleBar.BorderSizePixel = 0
 TitleBar.Parent = MainFrame
 
 local TitleCorner = Instance.new("UICorner")
-TitleCorner.CornerRadius = UDim.new(0, 12)
+TitleCorner.CornerRadius = UDim.new(0, 10)
 TitleCorner.Parent = TitleBar
 
--- Título
 local Title = Instance.new("TextLabel")
-Title.Name = "Title"
-Title.Size = UDim2.new(0.6, 0, 1, 0)
+Title.Size = UDim2.new(0.7, 0, 1, 0)
 Title.Position = UDim2.new(0.05, 0, 0, 0)
 Title.BackgroundTransparency = 1
 Title.Text = "⚡ NoobHub"
 Title.TextColor3 = Color3.fromRGB(20, 20, 20)
-Title.TextSize = 20
+Title.TextSize = 16
 Title.Font = Enum.Font.GothamBlack
 Title.TextXAlignment = Enum.TextXAlignment.Left
 Title.Parent = TitleBar
 
 -- Botão minimizar
 local MinimizeButton = Instance.new("TextButton")
-MinimizeButton.Name = "MinimizeButton"
-MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
-MinimizeButton.Position = UDim2.new(0.87, 0, 0.15, 0)
+MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MinimizeButton.Position = UDim2.new(0.87, 0, 0.13, 0)
 MinimizeButton.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MinimizeButton.BorderSizePixel = 0
 MinimizeButton.Text = "—"
 MinimizeButton.TextColor3 = Color3.fromRGB(255, 180, 0)
-MinimizeButton.TextSize = 20
+MinimizeButton.TextSize = 16
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Parent = TitleBar
 
@@ -75,371 +66,168 @@ local MinCorner = Instance.new("UICorner")
 MinCorner.CornerRadius = UDim.new(0, 5)
 MinCorner.Parent = MinimizeButton
 
--- Container para conteúdo
-local ContentContainer = Instance.new("ScrollingFrame")
-ContentContainer.Name = "ContentContainer"
-ContentContainer.Size = UDim2.new(1, -20, 1, -55)
-ContentContainer.Position = UDim2.new(0, 10, 0, 50)
-ContentContainer.BackgroundTransparency = 1
-ContentContainer.BorderSizePixel = 0
-ContentContainer.ScrollBarThickness = 4
-ContentContainer.ScrollBarImageColor3 = Color3.fromRGB(255, 180, 0)
-ContentContainer.CanvasSize = UDim2.new(0, 0, 0, 650)
-ContentContainer.Parent = MainFrame
+-- Botão God Mode
+local GodButton = Instance.new("TextButton")
+GodButton.Size = UDim2.new(0.9, 0, 0, 30)
+GodButton.Position = UDim2.new(0.05, 0, 0.5, 0)
+GodButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
+GodButton.BorderSizePixel = 0
+GodButton.Text = "🛡️ ATIVAR GOD MODE"
+GodButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+GodButton.TextSize = 12
+GodButton.Font = Enum.Font.GothamBold
+GodButton.Parent = MainFrame
 
--- Variáveis de estado
+local GodCorner = Instance.new("UICorner")
+GodCorner.CornerRadius = UDim.new(0, 5)
+GodCorner.Parent = GodButton
+
+-- Variáveis
+local isGodMode = false
 local isMinimized = false
 local originalSize = MainFrame.Size
-local isFleeSystemActive = false
-local fleeConnections = {}
-local threatLoop = nil
-local lastHealth = nil
+local fakeCharacter = nil
+local realCharacter = nil
+local cameraOffset = Vector3.new(0, 500, 0) -- Altura do frame no topo
 
--- Função para criar separadores
-local function createSeparator(yPosition)
-    local Separator = Instance.new("Frame")
-    Separator.Size = UDim2.new(1, -20, 0, 2)
-    Separator.Position = UDim2.new(0, 10, 0, yPosition)
-    Separator.BackgroundColor3 = Color3.fromRGB(255, 180, 0)
-    Separator.BorderSizePixel = 0
-    Separator.Parent = ContentContainer
-    return Separator
-end
-
--- Função para criar labels de seção
-local function createSection(text, yPosition)
-    local SectionLabel = Instance.new("TextLabel")
-    SectionLabel.Size = UDim2.new(1, -20, 0, 25)
-    SectionLabel.Position = UDim2.new(0, 10, 0, yPosition)
-    SectionLabel.BackgroundTransparency = 1
-    SectionLabel.Text = text
-    SectionLabel.TextColor3 = Color3.fromRGB(255, 180, 0)
-    SectionLabel.TextSize = 14
-    SectionLabel.Font = Enum.Font.GothamBold
-    SectionLabel.TextXAlignment = Enum.TextXAlignment.Left
-    SectionLabel.Parent = ContentContainer
-    return SectionLabel
-end
-
--- Função para criar botões
-local function createButton(text, yPosition, callback, color)
-    local Button = Instance.new("TextButton")
-    Button.Size = UDim2.new(1, -20, 0, 35)
-    Button.Position = UDim2.new(0, 10, 0, yPosition)
-    Button.BackgroundColor3 = color or Color3.fromRGB(40, 40, 40)
-    Button.BorderSizePixel = 0
-    Button.Text = text
-    Button.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Button.TextSize = 13
-    Button.Font = Enum.Font.Gotham
-    Button.AutoButtonColor = true
-    Button.Parent = ContentContainer
-    
-    local ButtonCorner = Instance.new("UICorner")
-    ButtonCorner.CornerRadius = UDim.new(0, 5)
-    ButtonCorner.Parent = Button
-    
-    if callback then
-        Button.MouseButton1Click:Connect(callback)
+-- Função para criar personagem falso
+local function createFakeCharacter()
+    if fakeCharacter and fakeCharacter.Parent then
+        fakeCharacter:Destroy()
     end
     
-    return Button
-end
-
--- Função para criar toggles
-local function createToggle(text, yPosition, callback, default)
-    local ToggleButton = Instance.new("TextButton")
-    ToggleButton.Size = UDim2.new(1, -20, 0, 35)
-    ToggleButton.Position = UDim2.new(0, 10, 0, yPosition)
-    ToggleButton.BackgroundColor3 = default and Color3.fromRGB(255, 180, 0) or Color3.fromRGB(40, 40, 40)
-    ToggleButton.BorderSizePixel = 0
-    ToggleButton.Text = text
-    ToggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleButton.TextSize = 13
-    ToggleButton.Font = Enum.Font.Gotham
-    ToggleButton.AutoButtonColor = false
-    ToggleButton.Parent = ContentContainer
+    realCharacter = Player.Character
+    if not realCharacter then return end
     
-    local ToggleCorner = Instance.new("UICorner")
-    ToggleCorner.CornerRadius = UDim.new(0, 5)
-    ToggleCorner.Parent = ToggleButton
+    -- Clonar personagem real
+    fakeCharacter = realCharacter:Clone()
     
-    local state = default or false
-    
-    ToggleButton.MouseButton1Click:Connect(function()
-        state = not state
-        ToggleButton.BackgroundColor3 = state and Color3.fromRGB(255, 180, 0) or Color3.fromRGB(40, 40, 40)
-        if callback then
-            callback(state)
-        end
-    end)
-    
-    return ToggleButton
-end
-
--- Criar elementos da GUI
-createSection("🏃 Movimento", 5)
-
-createButton("⚡ Speed Boost", 35, function()
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.WalkSpeed = 50
-        task.wait(5)
-        character.Humanoid.WalkSpeed = 16
-    end
-end, Color3.fromRGB(255, 150, 0))
-
-createButton("🦘 Super Jump", 75, function()
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.JumpPower = 100
-        task.wait(5)
-        character.Humanoid.JumpPower = 50
-    end
-end, Color3.fromRGB(255, 150, 0))
-
-createButton("🚀 Fly Mode", 115, function()
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") and character:FindFirstChild("HumanoidRootPart") then
-        local humanoid = character.Humanoid
-        local rootPart = character.HumanoidRootPart
-        
-        if not rootPart:FindFirstChild("BodyGyro") then
-            local bodyGyro = Instance.new("BodyGyro")
-            local bodyVelocity = Instance.new("BodyVelocity")
-            
-            bodyGyro.Parent = rootPart
-            bodyVelocity.Parent = rootPart
-            bodyVelocity.MaxForce = Vector3.new(0, 0, 0)
-            
-            humanoid.PlatformStand = true
-            bodyVelocity.Velocity = Vector3.new(0, 100, 0)
-            bodyGyro.CFrame = rootPart.CFrame
-            
-            task.wait(3)
-            bodyVelocity:Destroy()
-            bodyGyro:Destroy()
-            humanoid.PlatformStand = false
+    -- Remover scripts do clone
+    for _, descendant in pairs(fakeCharacter:GetDescendants()) do
+        if descendant:IsA("Script") or descendant:IsA("LocalScript") then
+            descendant:Destroy()
         end
     end
-end, Color3.fromRGB(255, 150, 0))
-
-createSeparator(165)
-
-createSection("🛡️ Proteção", 175)
-
-createButton("💪 God Mode", 205, function()
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.MaxHealth = math.huge
-        character.Humanoid.Health = math.huge
+    
+    -- Posicionar personagem falso no topo
+    local realRoot = realCharacter:FindFirstChild("HumanoidRootPart")
+    if realRoot then
+        fakeCharacter:PivotTo(CFrame.new(realRoot.Position + cameraOffset))
     end
-end, Color3.fromRGB(255, 200, 0))
-
-createButton("❤️ Restaurar Vida", 245, function()
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.Health = character.Humanoid.MaxHealth
+    
+    fakeCharacter.Parent = workspace
+    
+    -- Desativar física do fake
+    for _, part in pairs(fakeCharacter:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.Anchored = true
+            part.CanCollide = false
+            part.Transparency = 0 -- Visível
+        end
     end
-end, Color3.fromRGB(255, 200, 0))
-
-createSeparator(295)
-
-createSection("😨 Sistema Medroso", 305)
-
--- Status do sistema medroso
-local FleeStatusLabel = Instance.new("TextLabel")
-FleeStatusLabel.Size = UDim2.new(1, -20, 0, 20)
-FleeStatusLabel.Position = UDim2.new(0, 10, 0, 335)
-FleeStatusLabel.BackgroundTransparency = 1
-FleeStatusLabel.Text = "Status: Desativado"
-FleeStatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
-FleeStatusLabel.TextSize = 12
-FleeStatusLabel.Font = Enum.Font.Gotham
-FleeStatusLabel.TextXAlignment = Enum.TextXAlignment.Left
-FleeStatusLabel.Parent = ContentContainer
-
--- Função para limpar conexões do sistema medroso
-local function clearFleeConnections()
-    for _, conn in pairs(fleeConnections) do
-        conn:Disconnect()
-    end
-    fleeConnections = {}
+    
+    return fakeCharacter
 end
 
--- Função para fugir
-local function fleeFromTarget(targetPosition)
-    local character = Player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") or not character:FindFirstChild("Humanoid") then
+-- Função para ativar God Mode
+local function activateGodMode()
+    if isGodMode then return end
+    
+    realCharacter = Player.Character
+    if not realCharacter or not realCharacter:FindFirstChild("Humanoid") or not realCharacter:FindFirstChild("HumanoidRootPart") then
         return
     end
     
-    local rootPart = character.HumanoidRootPart
-    local humanoid = character.Humanoid
+    isGodMode = true
+    GodButton.Text = "🛡️ DESATIVAR GOD MODE"
+    GodButton.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
     
-    local direction = (rootPart.Position - targetPosition).Unit
-    direction = Vector3.new(direction.X, 0, direction.Z)
+    -- Vida infinita no personagem real
+    local humanoid = realCharacter:FindFirstChild("Humanoid")
+    humanoid.MaxHealth = math.huge
+    humanoid.Health = math.huge
     
-    if direction.Magnitude == 0 then
-        direction = Vector3.new(math.random(-100, 100), 0, math.random(-100, 100)).Unit
-    end
+    -- Criar personagem falso no topo
+    fakeCharacter = createFakeCharacter()
     
-    humanoid.WalkSpeed = 80
-    
-    local fleePosition = rootPart.Position + direction * 100
-    rootPart.CFrame = CFrame.new(fleePosition)
-    
-    task.delay(3, function()
-        if isFleeSystemActive and humanoid then
-            humanoid.WalkSpeed = 16
-        end
-    end)
-end
-
--- Função para verificar ameaças
-local function checkForThreats()
-    if not isFleeSystemActive then return end
-    
-    local character = Player.Character
-    if not character or not character:FindFirstChild("HumanoidRootPart") then
-        return
-    end
-    
-    local rootPart = character.HumanoidRootPart
-    
-    for _, otherPlayer in pairs(Players:GetPlayers()) do
-        if otherPlayer ~= Player and isFleeSystemActive then
-            local otherCharacter = otherPlayer.Character
-            if otherCharacter and otherCharacter:FindFirstChild("HumanoidRootPart") then
-                local otherRoot = otherCharacter.HumanoidRootPart
-                local distance = (rootPart.Position - otherRoot.Position).Magnitude
+    -- Manter fake no topo enquanto modo deus ativo
+    RunService.Heartbeat:Connect(function()
+        if isGodMode and fakeCharacter and fakeCharacter.Parent and realCharacter and realCharacter.Parent then
+            local realRoot = realCharacter:FindFirstChild("HumanoidRootPart")
+            local fakeRoot = fakeCharacter:FindFirstChild("HumanoidRootPart")
+            
+            if realRoot and fakeRoot then
+                -- Atualizar posição do fake para seguir o real (no topo)
+                fakeRoot.CFrame = CFrame.new(realRoot.Position + cameraOffset)
                 
-                if distance < 30 then
-                    fleeFromTarget(otherRoot.Position)
-                    break
+                -- Sincronizar animações
+                local realHumanoid = realCharacter:FindFirstChild("Humanoid")
+                local fakeHumanoid = fakeCharacter:FindFirstChild("Humanoid")
+                
+                if realHumanoid and fakeHumanoid then
+                    fakeHumanoid.WalkSpeed = realHumanoid.WalkSpeed
+                    fakeHumanoid.Jump = realHumanoid.Jump
                 end
             end
         end
-    end
-end
-
--- Função para iniciar sistema medroso
-local function startFleeSystem()
-    if isFleeSystemActive then return end
-    
-    isFleeSystemActive = true
-    FleeStatusLabel.Text = "Status: 🟢 Ativado"
-    FleeStatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-    
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        lastHealth = character.Humanoid.Health
-    end
-    
-    threatLoop = RunService.Heartbeat:Connect(function()
-        if isFleeSystemActive then
-            checkForThreats()
-        end
     end)
     
-    fleeConnections[#fleeConnections + 1] = Player.CharacterAdded:Connect(function(char)
-        if isFleeSystemActive then
-            local humanoid = char:WaitForChild("Humanoid")
-            lastHealth = humanoid.Health
-            
-            fleeConnections[#fleeConnections + 1] = humanoid.HealthChanged:Connect(function(health)
-                if isFleeSystemActive and health < lastHealth then
-                    fleeFromTarget(Vector3.new(math.random(-1000, 1000), 0, math.random(-1000, 1000)))
-                end
-                lastHealth = health
-            end)
+    -- Proteger contra dano
+    realCharacter:FindFirstChild("Humanoid").HealthChanged:Connect(function(health)
+        if isGodMode and health < math.huge then
+            realCharacter:FindFirstChild("Humanoid").Health = math.huge
         end
     end)
 end
 
--- Função para parar sistema medroso
-local function stopFleeSystem()
-    if not isFleeSystemActive then return end
+-- Função para desativar God Mode
+local function deactivateGodMode()
+    if not isGodMode then return end
     
-    isFleeSystemActive = false
-    FleeStatusLabel.Text = "Status: 🔴 Desativado"
-    FleeStatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+    isGodMode = false
+    GodButton.Text = "🛡️ ATIVAR GOD MODE"
+    GodButton.BackgroundColor3 = Color3.fromRGB(50, 150, 50)
     
-    if threatLoop then
-        threatLoop:Disconnect()
-        threatLoop = nil
+    -- Restaurar vida normal
+    if realCharacter and realCharacter:FindFirstChild("Humanoid") then
+        realCharacter:FindFirstChild("Humanoid").MaxHealth = 100
+        realCharacter:FindFirstChild("Humanoid").Health = 100
     end
     
-    clearFleeConnections()
-    
-    local character = Player.Character
-    if character and character:FindFirstChild("Humanoid") then
-        character.Humanoid.WalkSpeed = 16
+    -- Remover personagem falso
+    if fakeCharacter and fakeCharacter.Parent then
+        fakeCharacter:Destroy()
     end
+    fakeCharacter = nil
 end
 
--- Toggle do sistema medroso
-createToggle("😨 Ativar Modo Medroso", 365, function(state)
-    if state then
-        startFleeSystem()
+-- Toggle God Mode
+GodButton.MouseButton1Click:Connect(function()
+    if isGodMode then
+        deactivateGodMode()
     else
-        stopFleeSystem()
+        activateGodMode()
     end
-end, false)
+end)
 
-createSeparator(415)
-
-createSection("🔧 Utilidades", 425)
-
-createButton("🔄 Resetar Personagem", 455, function()
-    local character = Player.Character
-    if character then
-        character:BreakJoints()
-    end
-end, Color3.fromRGB(255, 100, 0))
-
-createButton("📍 Teleportar para Spawn", 495, function()
-    local character = Player.Character
-    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
-    
-    if rootPart then
-        local spawnPoints = {}
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("SpawnLocation") then
-                table.insert(spawnPoints, obj)
-            end
-        end
-        
-        if #spawnPoints > 0 then
-            local spawn = spawnPoints[math.random(1, #spawnPoints)]
-            rootPart.CFrame = spawn.CFrame + Vector3.new(0, 3, 0)
-        else
-            rootPart.CFrame = CFrame.new(0, 10, 0)
-        end
-    end
-end, Color3.fromRGB(255, 100, 0))
-
--- Botão minimizar connection
+-- Minimizar
 MinimizeButton.MouseButton1Click:Connect(function()
     if isMinimized then
-        -- Maximizar
         MainFrame.Size = originalSize
-        ContentContainer.Visible = true
+        GodButton.Visible = true
         MinimizeButton.Text = "—"
         isMinimized = false
     else
-        -- Minimizar
-        MainFrame.Size = UDim2.new(0, 320, 0, 45)
-        ContentContainer.Visible = false
+        MainFrame.Size = UDim2.new(0, 250, 0, 35)
+        GodButton.Visible = false
         MinimizeButton.Text = "+"
         isMinimized = true
     end
 end)
 
--- Conexão para limpar quando o script for destruído
+-- Limpar quando destruir
 ScreenGui.Destroying:Connect(function()
-    stopFleeSystem()
+    deactivateGodMode()
 end)
 
-print("⚡ NoobHub carregado com sucesso!")
-print("😨 Sistema Medroso incluído!")
+print("⚡ NoobHub - God Mode com Frame Separado carregado!")
