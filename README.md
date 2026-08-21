@@ -1,11 +1,13 @@
 --[[
-    ❤️ SrNoobMega ❤️ - ADMIN PANEL
-    Sistema Server-Side de Administração
+    ❤️ SrNoobMega ❤️ - BLOX FRUITS TEST
+    Auto Farm + GUI (Versão Teste)
 ]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
 
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
@@ -42,8 +44,8 @@ MainContainer.Name = "MainContainer"
 MainContainer.Parent = SrNoobMega
 MainContainer.BackgroundColor3 = Colors.Background
 MainContainer.BorderSizePixel = 0
-MainContainer.Position = UDim2.new(0.5, -160, 0.5, -220)
-MainContainer.Size = UDim2.new(0, 320, 0, 440)
+MainContainer.Position = UDim2.new(0.5, -150, 0.5, -150)
+MainContainer.Size = UDim2.new(0, 300, 0, 300)
 MainContainer.ClipsDescendants = true
 MainContainer.ZIndex = 2
 
@@ -56,7 +58,7 @@ local Header = Instance.new("Frame")
 Header.Parent = MainContainer
 Header.BackgroundColor3 = Colors.Secondary
 Header.BorderSizePixel = 0
-Header.Size = UDim2.new(1, 0, 0, 50)
+Header.Size = UDim2.new(1, 0, 0, 45)
 Header.ZIndex = 3
 
 local HeaderCorner = Instance.new("UICorner")
@@ -67,50 +69,50 @@ local GradientBar = Instance.new("Frame")
 GradientBar.Parent = Header
 GradientBar.BackgroundColor3 = Colors.Accent
 GradientBar.BorderSizePixel = 0
-GradientBar.Position = UDim2.new(0, 0, 0, 48)
+GradientBar.Position = UDim2.new(0, 0, 0, 43)
 GradientBar.Size = UDim2.new(1, 0, 0, 2)
 
 local Title = Instance.new("TextLabel")
 Title.Parent = Header
 Title.BackgroundTransparency = 1
-Title.Position = UDim2.new(0, 15, 0, 0)
-Title.Size = UDim2.new(0, 200, 0, 50)
+Title.Position = UDim2.new(0, 12, 0, 0)
+Title.Size = UDim2.new(0, 180, 0, 45)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "⭐ ADMIN PANEL"
+Title.Text = "🍊 Blox Fruits"
 Title.TextColor3 = Colors.Gold
-Title.TextSize = 16
+Title.TextSize = 14
 Title.TextXAlignment = Enum.TextXAlignment.Left
 
 local MinimizeButton = Instance.new("TextButton")
 MinimizeButton.Parent = Header
 MinimizeButton.BackgroundColor3 = Colors.Warning
 MinimizeButton.BorderSizePixel = 0
-MinimizeButton.Position = UDim2.new(1, -55, 0, 15)
-MinimizeButton.Size = UDim2.new(0, 22, 0, 22)
+MinimizeButton.Position = UDim2.new(1, -50, 0, 12)
+MinimizeButton.Size = UDim2.new(0, 20, 0, 20)
 MinimizeButton.Font = Enum.Font.GothamBold
 MinimizeButton.Text = "—"
 MinimizeButton.TextColor3 = Colors.Text
-MinimizeButton.TextSize = 14
+MinimizeButton.TextSize = 12
 MinimizeButton.AutoButtonColor = false
 
 local MinimizeCorner = Instance.new("UICorner")
-MinimizeCorner.CornerRadius = UDim.new(0, 5)
+MinimizeCorner.CornerRadius = UDim.new(0, 4)
 MinimizeCorner.Parent = MinimizeButton
 
 local CloseButton = Instance.new("TextButton")
 CloseButton.Parent = Header
 CloseButton.BackgroundColor3 = Colors.Danger
 CloseButton.BorderSizePixel = 0
-CloseButton.Position = UDim2.new(1, -28, 0, 15)
-CloseButton.Size = UDim2.new(0, 22, 0, 22)
+CloseButton.Position = UDim2.new(1, -25, 0, 12)
+CloseButton.Size = UDim2.new(0, 20, 0, 20)
 CloseButton.Font = Enum.Font.GothamBold
 CloseButton.Text = "✕"
 CloseButton.TextColor3 = Colors.Text
-CloseButton.TextSize = 14
+CloseButton.TextSize = 12
 CloseButton.AutoButtonColor = false
 
 local CloseCorner = Instance.new("UICorner")
-CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.CornerRadius = UDim.new(0, 4)
 CloseCorner.Parent = CloseButton
 
 -- Conteúdo
@@ -118,144 +120,144 @@ local ContentFrame = Instance.new("Frame")
 ContentFrame.Parent = MainContainer
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.BorderSizePixel = 0
-ContentFrame.Position = UDim2.new(0, 0, 0, 55)
-ContentFrame.Size = UDim2.new(1, 0, 1, -55)
+ContentFrame.Position = UDim2.new(0, 0, 0, 50)
+ContentFrame.Size = UDim2.new(1, 0, 1, -50)
 
--- Título da seção
-local PlayersTitle = Instance.new("TextLabel")
-PlayersTitle.Parent = ContentFrame
-PlayersTitle.BackgroundTransparency = 1
-PlayersTitle.Position = UDim2.new(0, 15, 0, 5)
-PlayersTitle.Size = UDim2.new(0, 200, 0, 20)
-PlayersTitle.Font = Enum.Font.GothamBold
-PlayersTitle.Text = "👥 JOGADORES ONLINE"
-PlayersTitle.TextColor3 = Colors.Accent
-PlayersTitle.TextSize = 11
-PlayersTitle.TextXAlignment = Enum.TextXAlignment.Left
+-- Status do Farm
+local FarmStatus = Instance.new("TextLabel")
+FarmStatus.Parent = ContentFrame
+FarmStatus.BackgroundTransparency = 1
+FarmStatus.Position = UDim2.new(0, 10, 0, 10)
+FarmStatus.Size = UDim2.new(0, 280, 0, 30)
+FarmStatus.Font = Enum.Font.GothamBold
+FarmStatus.Text = "Auto Farm: DESATIVADO"
+FarmStatus.TextColor3 = Colors.Danger
+FarmStatus.TextSize = 13
+FarmStatus.TextXAlignment = Enum.TextXAlignment.Center
 
--- Lista de Players
-local PlayerList = Instance.new("ScrollingFrame")
-PlayerList.Name = "PlayerList"
-PlayerList.Parent = ContentFrame
-PlayerList.BackgroundColor3 = Colors.Secondary
-PlayerList.BorderSizePixel = 0
-PlayerList.Position = UDim2.new(0, 15, 0, 30)
-PlayerList.Size = UDim2.new(0, 290, 0, 200)
-PlayerList.CanvasSize = UDim2.new(0, 0, 0, 0)
-PlayerList.ScrollBarThickness = 4
-PlayerList.ScrollBarImageColor3 = Colors.Accent
-PlayerList.ZIndex = 3
+-- Botão Auto Farm
+local FarmButton = Instance.new("TextButton")
+FarmButton.Parent = ContentFrame
+FarmButton.BackgroundColor3 = Colors.Success
+FarmButton.BorderSizePixel = 0
+FarmButton.Position = UDim2.new(0, 15, 0, 50)
+FarmButton.Size = UDim2.new(0, 270, 0, 45)
+FarmButton.Font = Enum.Font.GothamBold
+FarmButton.Text = "🌾 ATIVAR AUTO FARM"
+FarmButton.TextColor3 = Colors.Text
+FarmButton.TextSize = 13
+FarmButton.AutoButtonColor = false
 
-local ListCorner = Instance.new("UICorner")
-ListCorner.CornerRadius = UDim.new(0, 8)
-ListCorner.Parent = PlayerList
+local FarmCorner = Instance.new("UICorner")
+FarmCorner.CornerRadius = UDim.new(0, 8)
+FarmCorner.Parent = FarmButton
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = PlayerList
-UIListLayout.Padding = UDim.new(0, 4)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+-- Info
+local InfoLabel = Instance.new("TextLabel")
+InfoLabel.Parent = ContentFrame
+InfoLabel.BackgroundTransparency = 1
+InfoLabel.Position = UDim2.new(0, 10, 0, 110)
+InfoLabel.Size = UDim2.new(0, 280, 0, 40)
+InfoLabel.Font = Enum.Font.Gotham
+InfoLabel.Text = "TESTE - Auto Farm Básico\nProcura inimigos próximos"
+InfoLabel.TextColor3 = Colors.TextDark
+InfoLabel.TextSize = 10
+InfoLabel.TextXAlignment = Enum.TextXAlignment.Center
+InfoLabel.TextYAlignment = Enum.TextYAlignment.Center
 
-local UIPadding = Instance.new("UIPadding")
-UIPadding.Parent = PlayerList
-UIPadding.PaddingLeft = UDim.new(0, 8)
-UIPadding.PaddingRight = UDim.new(0, 8)
-UIPadding.PaddingTop = UDim.new(0, 8)
-UIPadding.PaddingBottom = UDim.new(0, 8)
+-- Sistema de Auto Farm
+local farmEnabled = false
+local farmConnection
 
--- Player Selecionado
-local SelectedPlayer = nil
-local SelectedButton = nil
-
--- Função para atualizar lista
-local function UpdatePlayerList()
-    -- Limpar lista
-    for _, child in pairs(PlayerList:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
+local function FindNearestEnemy()
+    local nearest = nil
+    local shortestDistance = 100 -- Alcance máximo
     
-    local players = Players:GetPlayers()
-    local totalHeight = #players * 32 + (#players - 1) * 4 + 16
-    PlayerList.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
-    
-    for i, otherPlayer in pairs(players) do
-        if otherPlayer ~= Player then
-            local playerButton = Instance.new("TextButton")
-            playerButton.Name = "Player_" .. otherPlayer.Name
-            playerButton.Parent = PlayerList
-            playerButton.BackgroundColor3 = Colors.Tertiary
-            playerButton.BorderSizePixel = 0
-            playerButton.Size = UDim2.new(1, -16, 0, 30)
-            playerButton.Font = Enum.Font.GothamBold
-            playerButton.Text = "👤 " .. otherPlayer.Name
-            playerButton.TextColor3 = Colors.Text
-            playerButton.TextSize = 11
-            playerButton.TextXAlignment = Enum.TextXAlignment.Left
-            playerButton.AutoButtonColor = false
-            playerButton.LayoutOrder = i
-            playerButton.ZIndex = 4
+    for _, object in pairs(workspace:GetDescendants()) do
+        if object:IsA("Model") and object:FindFirstChild("Humanoid") and object:FindFirstChild("HumanoidRootPart") then
+            local humanoid = object:FindFirstChild("Humanoid")
+            local root = object:FindFirstChild("HumanoidRootPart")
             
-            local playerCorner = Instance.new("UICorner")
-            playerCorner.CornerRadius = UDim.new(0, 5)
-            playerCorner.Parent = playerButton
-            
-            playerButton.MouseButton1Click:Connect(function()
-                SelectedPlayer = otherPlayer
-                
-                -- Resetar todos botões
-                for _, child in pairs(PlayerList:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        child.BackgroundColor3 = Colors.Tertiary
-                    end
+            -- Verificar se é inimigo (não é player)
+            if humanoid.Health > 0 and not Players:GetPlayerFromCharacter(object) then
+                local distance = (RootPart.Position - root.Position).Magnitude
+                if distance < shortestDistance then
+                    shortestDistance = distance
+                    nearest = object
                 end
-                
-                -- Destacar selecionado
-                playerButton.BackgroundColor3 = Colors.Accent
-                SelectedButton = playerButton
-                
-                SelectedLabel.Text = "Selecionado: " .. otherPlayer.Name
-                Notify("Selecionado: " .. otherPlayer.Name, Colors.Cyan)
-            end)
+            end
         end
     end
+    
+    return nearest
 end
 
--- Label do player selecionado
-local SelectedLabel = Instance.new("TextLabel")
-SelectedLabel.Parent = ContentFrame
-SelectedLabel.BackgroundTransparency = 1
-SelectedLabel.Position = UDim2.new(0, 15, 0, 240)
-SelectedLabel.Size = UDim2.new(0, 290, 0, 20)
-SelectedLabel.Font = Enum.Font.GothamBold
-SelectedLabel.Text = "Selecionado: Nenhum"
-SelectedLabel.TextColor3 = Colors.TextDark
-SelectedLabel.TextSize = 10
-SelectedLabel.TextXAlignment = Enum.TextXAlignment.Center
-SelectedLabel.ZIndex = 3
-
--- Função para criar botão de ação
-local function CreateActionButton(text, color, position, callback)
-    local button = Instance.new("TextButton")
-    button.Parent = ContentFrame
-    button.BackgroundColor3 = color
-    button.BorderSizePixel = 0
-    button.Position = position
-    button.Size = UDim2.new(0, 140, 0, 35)
-    button.Font = Enum.Font.GothamBold
-    button.Text = text
-    button.TextColor3 = Colors.Text
-    button.TextSize = 11
-    button.AutoButtonColor = false
-    button.ZIndex = 3
+local function StartFarm()
+    farmEnabled = true
+    FarmStatus.Text = "Auto Farm: ATIVADO"
+    FarmStatus.TextColor3 = Colors.Success
+    FarmButton.Text = "⏹️ PARAR AUTO FARM"
+    FarmButton.BackgroundColor3 = Colors.Danger
     
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 7)
-    corner.Parent = button
+    Notify("Auto Farm ATIVADO!", Colors.Success)
     
-    button.MouseButton1Click:Connect(callback)
-    return button
+    farmConnection = RunService.Heartbeat:Connect(function()
+        if not farmEnabled or not Character or not RootPart or not Humanoid then
+            return
+        end
+        
+        local enemy = FindNearestEnemy()
+        
+        if enemy then
+            local enemyRoot = enemy:FindFirstChild("HumanoidRootPart")
+            local enemyHumanoid = enemy:FindFirstChild("Humanoid")
+            
+            if enemyRoot and enemyHumanoid and enemyHumanoid.Health > 0 then
+                -- Mover até o inimigo
+                Humanoid:MoveTo(enemyRoot.Position)
+                
+                -- Atacar quando perto
+                if (RootPart.Position - enemyRoot.Position).Magnitude < 10 then
+                    -- Usar ataques básicos
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Z, false, nil)
+                    wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Z, false, nil)
+                    
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.X, false, nil)
+                    wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.X, false, nil)
+                end
+            end
+        else
+            -- Procurar inimigos andando
+            local randomX = math.random(-50, 50)
+            local randomZ = math.random(-50, 50)
+            Humanoid:MoveTo(Vector3.new(randomX, 0, randomZ))
+        end
+    end)
 end
+
+local function StopFarm()
+    farmEnabled = false
+    if farmConnection then
+        farmConnection:Disconnect()
+    end
+    
+    FarmStatus.Text = "Auto Farm: DESATIVADO"
+    FarmStatus.TextColor3 = Colors.Danger
+    FarmButton.Text = "🌾 ATIVAR AUTO FARM"
+    FarmButton.BackgroundColor3 = Colors.Success
+    
+    Notify("Auto Farm DESATIVADO!", Colors.Danger)
+end
+
+FarmButton.MouseButton1Click:Connect(function()
+    if farmEnabled then
+        StopFarm()
+    else
+        StartFarm()
+    end
+end)
 
 -- Notificação
 local function Notify(text, color)
@@ -287,59 +289,6 @@ local function Notify(text, color)
     wait(0.3)
     notif:Destroy()
 end
-
--- ===== AÇÕES =====
-
--- Botão KICK
-CreateActionButton("👢 KICK", Colors.Danger, UDim2.new(0, 15, 0, 270), function()
-    if SelectedPlayer then
-        Notify("Kickando " .. SelectedPlayer.Name, Colors.Danger)
-        pcall(function()
-            SelectedPlayer:Kick("Kickado pelo Admin Panel")
-        end)
-    else
-        Notify("Selecione um player!", Colors.Warning)
-    end
-end)
-
--- Botão KILL
-CreateActionButton("💀 KILL", Colors.Accent, UDim2.new(0, 165, 0, 270), function()
-    if SelectedPlayer then
-        if SelectedPlayer.Character then
-            local targetHumanoid = SelectedPlayer.Character:FindFirstChild("Humanoid")
-            if targetHumanoid then
-                targetHumanoid.Health = 0
-                Notify(SelectedPlayer.Name .. " eliminado!", Colors.Accent)
-            end
-        end
-    else
-        Notify("Selecione um player!", Colors.Warning)
-    end
-end)
-
--- Botão OP
-CreateActionButton("⚡ DAR OP", Colors.Gold, UDim2.new(0, 15, 0, 315), function()
-    if SelectedPlayer then
-        Notify("OP para " .. SelectedPlayer.Name, Colors.Gold)
-        if SelectedPlayer.Character then
-            local targetHumanoid = SelectedPlayer.Character:FindFirstChild("Humanoid")
-            if targetHumanoid then
-                targetHumanoid.WalkSpeed = 100
-                targetHumanoid.JumpPower = 100
-                targetHumanoid.MaxHealth = 1000
-                targetHumanoid.Health = 1000
-            end
-        end
-    else
-        Notify("Selecione um player!", Colors.Warning)
-    end
-end)
-
--- Botão REFRESH
-CreateActionButton("🔄 ATUALIZAR", Colors.Cyan, UDim2.new(0, 165, 0, 315), function()
-    UpdatePlayerList()
-    Notify("Lista atualizada!", Colors.Cyan)
-end)
 
 -- Drag System
 local dragging = false
@@ -377,26 +326,18 @@ local isMinimized = false
 MinimizeButton.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
-        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 50)}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 300, 0, 45)}):Play()
         MinimizeButton.Text = "+"
     else
-        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 320, 0, 440)}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 300, 0, 300)}):Play()
         MinimizeButton.Text = "—"
     end
 end)
 
 -- Fechar
 CloseButton.MouseButton1Click:Connect(function()
+    StopFarm()
     SrNoobMega:Destroy()
-end)
-
--- Auto-atualizar lista
-spawn(function()
-    while wait(3) do
-        if SrNoobMega.Parent then
-            UpdatePlayerList()
-        end
-    end
 end)
 
 -- Atualizar personagem
@@ -404,8 +345,12 @@ Player.CharacterAdded:Connect(function(newCharacter)
     Character = newCharacter
     Humanoid = Character:WaitForChild("Humanoid")
     RootPart = Character:WaitForChild("HumanoidRootPart")
+    
+    if farmEnabled then
+        StopFarm()
+        wait(1)
+        StartFarm()
+    end
 end)
 
--- Inicializar
-UpdatePlayerList()
-Notify("⭐ Admin Panel Carregado!", Colors.Gold)
+Notify("🍊 Blox Fruits Test Carregado!", Colors.Gold)
