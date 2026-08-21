@@ -1,21 +1,17 @@
 --[[
-    ❤️ SrNoobMega ❤️ - MEGA HUB UNIVERSAL
-    Versão Final Mobile
+    ❤️ SrNoobMega ❤️ - TOOLS HUB
+    Sistema de Criação de Tools
 ]]
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Lighting = game:GetService("Lighting")
-local RunService = game:GetService("RunService")
 
 local Player = Players.LocalPlayer
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild("Humanoid")
 local RootPart = Character:WaitForChild("HumanoidRootPart")
 local Backpack = Player:WaitForChild("Backpack")
-local Camera = workspace.CurrentCamera
 
 -- Cores Modernas
 local Colors = {
@@ -39,14 +35,14 @@ SrNoobMega.Parent = game.CoreGui
 SrNoobMega.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SrNoobMega.ResetOnSpawn = false
 
--- Container Principal (Compacto para Mobile)
+-- Container Principal
 local MainContainer = Instance.new("Frame")
 MainContainer.Name = "MainContainer"
 MainContainer.Parent = SrNoobMega
 MainContainer.BackgroundColor3 = Colors.Background
 MainContainer.BorderSizePixel = 0
-MainContainer.Position = UDim2.new(0.5, -130, 0.5, -180)
-MainContainer.Size = UDim2.new(0, 260, 0, 350)
+MainContainer.Position = UDim2.new(0.5, -130, 0.5, -150)
+MainContainer.Size = UDim2.new(0, 260, 0, 280)
 MainContainer.ClipsDescendants = true
 MainContainer.ZIndex = 2
 
@@ -78,7 +74,7 @@ Title.BackgroundTransparency = 1
 Title.Position = UDim2.new(0, 10, 0, 0)
 Title.Size = UDim2.new(0, 160, 0, 40)
 Title.Font = Enum.Font.GothamBold
-Title.Text = "❤️ SrNoobMega"
+Title.Text = "❤️ Tools Hub"
 Title.TextColor3 = Colors.Text
 Title.TextSize = 12
 Title.TextXAlignment = Enum.TextXAlignment.Left
@@ -113,41 +109,27 @@ local CloseCorner = Instance.new("UICorner")
 CloseCorner.CornerRadius = UDim.new(0, 4)
 CloseCorner.Parent = CloseButton
 
--- Conteúdo com Scroll
-local ContentFrame = Instance.new("ScrollingFrame")
+-- Conteúdo
+local ContentFrame = Instance.new("Frame")
 ContentFrame.Parent = MainContainer
 ContentFrame.BackgroundTransparency = 1
 ContentFrame.BorderSizePixel = 0
 ContentFrame.Position = UDim2.new(0, 0, 0, 45)
 ContentFrame.Size = UDim2.new(1, 0, 1, -45)
-ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 750)
-ContentFrame.ScrollBarThickness = 3
-ContentFrame.ScrollBarImageColor3 = Colors.Accent
 
-local UIListLayout = Instance.new("UIListLayout")
-UIListLayout.Parent = ContentFrame
-UIListLayout.Padding = UDim.new(0, 5)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-
-local UIPadding = Instance.new("UIPadding")
-UIPadding.Parent = ContentFrame
-UIPadding.PaddingLeft = UDim.new(0, 8)
-UIPadding.PaddingRight = UDim.new(0, 8)
-UIPadding.PaddingTop = UDim.new(0, 8)
-
--- Função criar botão (maior para touch)
-local function CreateButton(text, color, callback)
+-- Função criar botão
+local function CreateButton(text, color, callback, position)
     local button = Instance.new("TextButton")
     button.Parent = ContentFrame
     button.BackgroundColor3 = color
     button.BorderSizePixel = 0
-    button.Size = UDim2.new(1, 0, 0, 35)
+    button.Position = position
+    button.Size = UDim2.new(0, 240, 0, 35)
     button.Font = Enum.Font.GothamBold
     button.Text = text
     button.TextColor3 = Colors.Text
     button.TextSize = 11
     button.AutoButtonColor = false
-    button.LayoutOrder = #ContentFrame:GetChildren() + 1
     
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 6)
@@ -163,21 +145,6 @@ local function CreateButton(text, color, callback)
     
     button.MouseButton1Click:Connect(callback)
     return button
-end
-
--- Função criar seção
-local function CreateSection(text)
-    local label = Instance.new("TextLabel")
-    label.Parent = ContentFrame
-    label.BackgroundTransparency = 1
-    label.Size = UDim2.new(1, 0, 0, 18)
-    label.Font = Enum.Font.GothamBold
-    label.Text = text
-    label.TextColor3 = Colors.Accent
-    label.TextSize = 10
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.LayoutOrder = #ContentFrame:GetChildren() + 1
-    return label
 end
 
 -- Notificação
@@ -211,99 +178,9 @@ local function Notify(text, color)
     notif:Destroy()
 end
 
--- ===== SISTEMAS =====
+-- ===== CRIAÇÃO DE TOOLS =====
 
-local speedValue = 16
-local jumpValue = 50
-local flyEnabled = false
-local noclipEnabled = false
-local espEnabled = false
-local antiAFKEnabled = false
-
--- MOVIMENTO
-CreateSection("⚡ MOVIMENTO")
-
-CreateButton("⚡ SPEED+", Colors.Accent2, function()
-    speedValue += 5
-    Humanoid.WalkSpeed = speedValue
-    Notify("Speed: " .. speedValue, Colors.Accent2)
-end)
-
-CreateButton("⚡ SPEED-", Colors.Accent2, function()
-    speedValue = math.max(5, speedValue - 5)
-    Humanoid.WalkSpeed = speedValue
-    Notify("Speed: " .. speedValue, Colors.Accent2)
-end)
-
-CreateButton("🦘 JUMP+", Colors.Purple, function()
-    jumpValue += 10
-    Humanoid.JumpPower = jumpValue
-    Notify("Jump: " .. jumpValue, Colors.Purple)
-end)
-
-CreateButton("🦘 JUMP-", Colors.Purple, function()
-    jumpValue = math.max(10, jumpValue - 10)
-    Humanoid.JumpPower = jumpValue
-    Notify("Jump: " .. jumpValue, Colors.Purple)
-end)
-
--- EXPLOITS
-CreateSection("🕊️ EXPLOITS")
-
-CreateButton("🕊️ FLY", Colors.Accent, function()
-    flyEnabled = not flyEnabled
-    Notify(flyEnabled and "Fly ON" or "Fly OFF", flyEnabled and Colors.Success or Colors.Danger)
-end)
-
-CreateButton("👻 NOCLIP", Colors.Warning, function()
-    noclipEnabled = not noclipEnabled
-    Notify(noclipEnabled and "Noclip ON" or "Noclip OFF", noclipEnabled and Colors.Success or Colors.Danger)
-end)
-
--- ITENS
-CreateSection("💎 ITENS")
-
-CreateButton("🎒 PEGAR TODOS ITENS", Colors.Success, function()
-    local count = 0
-    for _, item in pairs(ReplicatedStorage:GetDescendants()) do
-        if item:IsA("Tool") or item:IsA("HopperBin") then
-            local clone = item:Clone()
-            clone.Parent = Backpack
-            count += 1
-        end
-    end
-    Notify("Pegou " .. count .. " itens!", Colors.Success)
-end)
-
--- VISUAIS
-CreateSection("👁️ VISUAIS")
-
-CreateButton("👁️ ESP", Colors.Purple, function()
-    espEnabled = not espEnabled
-    Notify(espEnabled and "ESP ON" or "ESP OFF", espEnabled and Colors.Success or Colors.Danger)
-end)
-
-CreateButton("💡 FULLBRIGHT", Colors.Warning, function()
-    Lighting.Brightness = Lighting.Brightness == 2 and 1 or 2
-    Notify("Fullbright!", Colors.Warning)
-end)
-
--- TELEPORTE
-CreateSection("🎯 TELEPORTE")
-
-CreateButton("🎯 TP RANDOM", Colors.Accent, function()
-    local players = Players:GetPlayers()
-    if #players > 1 then
-        local randomPlayer = players[math.random(1, #players)]
-        if randomPlayer ~= Player and randomPlayer.Character then
-            RootPart.CFrame = randomPlayer.Character.HumanoidRootPart.CFrame
-            Notify("TP para " .. randomPlayer.Name, Colors.Accent)
-        end
-    else
-        Notify("Sem players!", Colors.Danger)
-    end
-end)
-
+-- TP TOOL
 CreateButton("🎯 CRIAR TP TOOL", Colors.Cyan, function()
     local tool = Instance.new("Tool")
     tool.Name = "TP Tool"
@@ -321,101 +198,123 @@ CreateButton("🎯 CRIAR TP TOOL", Colors.Cyan, function()
     tool.Activated:Connect(teleport)
     tool.Parent = Backpack
     Notify("TP Tool criada!", Colors.Cyan)
-end)
+end, UDim2.new(0, 10, 0, 10))
 
--- OUTROS
-CreateSection("⚙️ OUTROS")
-
-CreateButton("⏰ ANTI-AFK", Colors.Warning, function()
-    antiAFKEnabled = not antiAFKEnabled
-    Notify(antiAFKEnabled and "Anti-AFK ON" or "Anti-AFK OFF", antiAFKEnabled and Colors.Success or Colors.Danger)
-end)
-
-CreateButton("🔄 RESET", Colors.Danger, function()
-    Character:BreakJoints()
-    Notify("Resetado!", Colors.Danger)
-end)
-
--- ===== SISTEMAS AVANÇADOS =====
-
--- Fly System (Mobile - usa joystick)
-RunService.Heartbeat:Connect(function()
-    if flyEnabled and Character and RootPart then
-        local direction = Vector3.new()
+-- FLY TOOL
+CreateButton("🕊️ CRIAR FLY TOOL", Colors.Accent, function()
+    local tool = Instance.new("Tool")
+    tool.Name = "Fly Tool"
+    tool.RequiresHandle = false
+    tool.ToolTip = "Ativar/Desativar Fly"
+    
+    local flyEnabled = false
+    local flyConnection
+    
+    local function toggleFly()
+        flyEnabled = not flyEnabled
         
-        -- Usar joystick virtual do Roblox
-        local moveVector = Humanoid.MoveDirection
-        
-        if moveVector.Magnitude > 0 then
-            direction = moveVector
-        end
-        
-        -- Controle de altura por botões
-        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
-            direction += Vector3.new(0, 1, 0)
-        end
-        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
-            direction -= Vector3.new(0, 1, 0)
-        end
-        
-        if direction.Magnitude > 0 then
-            RootPart.Velocity = direction.Unit * 30
+        if flyEnabled then
+            Notify("Fly ON!", Colors.Success)
+            
+            flyConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if flyEnabled and Character and RootPart then
+                    local direction = Vector3.new()
+                    local moveVector = Humanoid.MoveDirection
+                    
+                    if moveVector.Magnitude > 0 then
+                        direction = moveVector
+                    end
+                    
+                    if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                        direction += Vector3.new(0, 1, 0)
+                    end
+                    if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                        direction -= Vector3.new(0, 1, 0)
+                    end
+                    
+                    if direction.Magnitude > 0 then
+                        RootPart.Velocity = direction.Unit * 30
+                    else
+                        RootPart.Velocity = Vector3.new(0, 0, 0)
+                    end
+                end
+            end)
         else
+            Notify("Fly OFF!", Colors.Danger)
+            if flyConnection then
+                flyConnection:Disconnect()
+            end
             RootPart.Velocity = Vector3.new(0, 0, 0)
         end
     end
-end)
+    
+    tool.Activated:Connect(toggleFly)
+    tool.Parent = Backpack
+    Notify("Fly Tool criada!", Colors.Accent)
+end, UDim2.new(0, 10, 0, 55))
 
--- Noclip System
-RunService.Stepped:Connect(function()
-    if noclipEnabled and Character then
-        for _, part in pairs(Character:GetDescendants()) do
-            if part:IsA("BasePart") then
-                part.CanCollide = false
-            end
-        end
-    end
-end)
-
--- ESP System
-RunService.Heartbeat:Connect(function()
-    if espEnabled then
-        for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer ~= Player and otherPlayer.Character then
-                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if otherRoot and not otherRoot:FindFirstChild("ESP") then
-                    local esp = Instance.new("Highlight")
-                    esp.Name = "ESP"
-                    esp.Parent = otherRoot
-                    esp.FillColor = Color3.fromRGB(255, 0, 0)
-                    esp.OutlineColor = Color3.fromRGB(255, 255, 255)
-                    esp.FillTransparency = 0.5
+-- ESPADA CLÁSSICA
+CreateButton("⚔️ CRIAR ESPADA", Colors.Warning, function()
+    local tool = Instance.new("Tool")
+    tool.Name = "Classic Sword"
+    tool.ToolTip = "Espada Clássica do Roblox"
+    
+    -- Criar Handle
+    local handle = Instance.new("Part")
+    handle.Name = "Handle"
+    handle.Size = Vector3.new(0.5, 0.5, 2)
+    handle.Shape = Enum.PartType.Cylinder
+    handle.BrickColor = BrickColor.new("Dark stone grey")
+    handle.Material = Enum.Material.Metal
+    handle.Position = RootPart.Position + Vector3.new(0, 1, 0)
+    handle.Parent = tool
+    
+    -- Criar Lâmina
+    local blade = Instance.new("Part")
+    blade.Name = "Blade"
+    blade.Size = Vector3.new(0.3, 0.1, 3)
+    blade.BrickColor = BrickColor.new("Medium stone grey")
+    blade.Material = Enum.Material.Metal
+    blade.Position = handle.Position + Vector3.new(0, 0, 1.5)
+    blade.Parent = tool
+    
+    -- Soldar lâmina ao handle
+    local weld = Instance.new("Weld")
+    weld.Part0 = handle
+    weld.Part1 = blade
+    weld.C0 = CFrame.new(0, 0, 1.5)
+    weld.Parent = handle
+    
+    -- Dano da espada
+    local damage = 10
+    
+    tool.Activated:Connect(function()
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://000000000"
+        
+        -- Sistema de dano
+        local function dealDamage(target)
+            if target and target.Parent then
+                local targetHumanoid = target.Parent:FindFirstChild("Humanoid")
+                if targetHumanoid then
+                    targetHumanoid:TakeDamage(damage)
+                    Notify("Dealt " .. damage .. " damage!", Colors.Warning)
                 end
             end
         end
-    else
-        for _, otherPlayer in pairs(Players:GetPlayers()) do
-            if otherPlayer.Character then
-                local otherRoot = otherPlayer.Character:FindFirstChild("HumanoidRootPart")
-                if otherRoot then
-                    local esp = otherRoot:FindFirstChild("ESP")
-                    if esp then esp:Destroy() end
-                end
-            end
+        
+        -- Verificar alvo
+        local mouse = Player:GetMouse()
+        if mouse.Target then
+            dealDamage(mouse.Target)
         end
-    end
-end)
+    end)
+    
+    tool.Parent = Backpack
+    Notify("Espada criada!", Colors.Warning)
+end, UDim2.new(0, 10, 0, 100))
 
--- Anti-AFK
-RunService.Heartbeat:Connect(function()
-    if antiAFKEnabled then
-        VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.Space, false, nil)
-        wait(1)
-        VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.Space, false, nil)
-    end
-end)
-
--- Drag System (Touch)
+-- Drag System
 local dragging = false
 local dragInput, dragStart, startPos
 
@@ -454,7 +353,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
         TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 260, 0, 40)}):Play()
         MinimizeButton.Text = "+"
     else
-        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 260, 0, 350)}):Play()
+        TweenService:Create(MainContainer, TweenInfo.new(0.3), {Size = UDim2.new(0, 260, 0, 280)}):Play()
         MinimizeButton.Text = "—"
     end
 end)
@@ -471,4 +370,4 @@ Player.CharacterAdded:Connect(function(newCharacter)
     RootPart = Character:WaitForChild("HumanoidRootPart")
 end)
 
-Notify("❤️ SrNoobMega Carregado!", Colors.Success)
+Notify("❤️ Tools Hub Carregado!", Colors.Success)
